@@ -4,13 +4,13 @@
 
 #ifndef OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_WORKERS_HPP
 #define OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_WORKERS_HPP
+/*
+extern void workerBodyA(_sem *mutexAB);
 
-extern void workerBodyA(_sem* mutexAB);
-
-extern void workerBodyB(_sem* mutexAB);
+extern void workerBodyB(_sem *mutexAB);
 
 extern void workerBodyC();
 
-extern void workerBodyD();
+extern void workerBodyD();*/
 
-#endif //OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_WORKERS_HPP
+#endif // OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_WORKERS_HPP

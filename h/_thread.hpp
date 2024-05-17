@@ -64,6 +64,10 @@ private:
         {
             Scheduler::put(this);
         }
+        if (_thread::running == nullptr)
+        {
+            _thread::running = this;
+        }
     }
 
     struct Context

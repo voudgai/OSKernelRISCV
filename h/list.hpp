@@ -3,7 +3,7 @@
 
 #include "memoryAllocator.hpp"
 
-template<typename T>
+template <typename T>
 class List
 {
 private:
@@ -26,18 +26,21 @@ public:
 
     void addFirst(T *data)
     {
-        Elem *elem = (Elem*)memoryAllocator::_kmalloc( sizeof(Elem));
+        Elem *elem = (Elem *)memoryAllocator::_kmalloc(sizeof(Elem));
         elem->data = data;
         elem->next = head;
 
         head = elem;
-        if (!tail) { tail = head; }
+        if (!tail)
+        {
+            tail = head;
+        }
     }
 
     void addLast(T *data)
     {
 
-        Elem *elem = (Elem*)memoryAllocator::_kmalloc( sizeof(Elem));
+        Elem *elem = (Elem *)memoryAllocator::_kmalloc(sizeof(Elem));
         elem->data = data;
         elem->next = 0;
 
@@ -45,7 +48,8 @@ public:
         {
             tail->next = elem;
             tail = elem;
-        } else
+        }
+        else
         {
             head = tail = elem;
         }
@@ -53,14 +57,20 @@ public:
 
     T *removeFirst()
     {
-        if (!head) { return 0; }
+        if (!head)
+        {
+            return 0;
+        }
 
         Elem *elem = head;
         head = head->next;
-        if (!head) { tail = 0; }
+        if (!head)
+        {
+            tail = 0;
+        }
 
         T *ret = elem->data;
-        //delete elem;
+        // delete elem;
         memoryAllocator::_kmfree(elem);
         //
         return ret;
@@ -68,13 +78,19 @@ public:
 
     T *peekFirst()
     {
-        if (!head) { return 0; }
+        if (!head)
+        {
+            return 0;
+        }
         return head->data;
     }
 
     T *removeLast()
     {
-        if (!head) { return 0; }
+        if (!head)
+        {
+            return 0;
+        }
 
         Elem *prev = 0;
         for (Elem *curr = head; curr && curr != tail; curr = curr->next)
@@ -83,8 +99,14 @@ public:
         }
 
         Elem *elem = tail;
-        if (prev) { prev->next = 0; }
-        else { head = 0; }
+        if (prev)
+        {
+            prev->next = 0;
+        }
+        else
+        {
+            head = 0;
+        }
         tail = prev;
 
         T *ret = elem->data;
@@ -94,11 +116,46 @@ public:
         return ret;
     }
 
+    int removeSpec(T *ptr)
+    {
+        if (ptr == nullptr)
+            return 0;
+        Elem *cur = head, *prev = nullptr;
+        while (cur != nullptr)
+        {
+            if (cur->data == ptr)
+            {
+                break;
+            }
+            prev = cur;
+            cur = cur->next;
+        }
+        if (cur == nullptr)
+            return -1;
+        if (prev == nullptr)
+        {
+            head = cur->next;
+        }
+        else
+        {
+            prev->next = cur->next;
+        }
+        if (cur->next == nullptr)
+        {
+            tail = prev;
+        }
+        memoryAllocator::_kmfree(cur);
+        return 0;
+    }
+
     T *peekLast()
     {
-        if (!tail) { return 0; }
+        if (!tail)
+        {
+            return 0;
+        }
         return tail->data;
     }
 };
 
-#endif //OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_LIST_HPP
+#endif // OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_LIST_HPP

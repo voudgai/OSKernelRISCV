@@ -75,14 +75,19 @@ public:
     // write register sstatus
     static void w_sstatus(uint64 sstatus);
 
-    enum trapType : unsigned long {
+    enum trapType : unsigned long
+    {
         ECALL_U = 0x0000000000000008UL,
         ECALL_S = 0x0000000000000009UL,
         TIMER = 0x8000000000000001UL,
         CONSOLE = 0x8000000000000009UL,
+        ILLEGAL_INSTRUCTION = 0x0000000000000002UL,
+        ILLEGAL_WR_ADDR = 0x0000000000000007UL,
+        ILLEGAL_RD_ADDR = 0x0000000000000005UL,
     };
 
-    enum trapEcallCause{
+    enum trapEcallCause
+    {
         MALLOC = 0x01,
         MFREE = 0x02,
 
@@ -105,10 +110,7 @@ public:
     // supervisor trap
     static void supervisorTrap();
 
-
-
 private:
-
     // supervisor trap handler
     static void handleSupervisorTrap();
 };
@@ -116,95 +118,93 @@ private:
 inline uint64 Riscv::r_scause()
 {
     uint64 volatile scause;
-    __asm__ volatile ("csrr %[scause], scause" : [scause] "=r"(scause));
+    __asm__ volatile("csrr %[scause], scause" : [scause] "=r"(scause));
     return scause;
 }
 
 inline void Riscv::w_scause(uint64 scause)
 {
-    __asm__ volatile ("csrw scause, %[scause]" : : [scause] "r"(scause));
+    __asm__ volatile("csrw scause, %[scause]" : : [scause] "r"(scause));
 }
 
 inline uint64 Riscv::r_sepc()
 {
     uint64 volatile sepc;
-    __asm__ volatile ("csrr %[sepc], sepc" : [sepc] "=r"(sepc));
+    __asm__ volatile("csrr %[sepc], sepc" : [sepc] "=r"(sepc));
     return sepc;
 }
 
 inline void Riscv::w_sepc(uint64 sepc)
 {
-    __asm__ volatile ("csrw sepc, %[sepc]" : : [sepc] "r"(sepc));
+    __asm__ volatile("csrw sepc, %[sepc]" : : [sepc] "r"(sepc));
 }
 
 inline uint64 Riscv::r_stvec()
 {
     uint64 volatile stvec;
-    __asm__ volatile ("csrr %[stvec], stvec" : [stvec] "=r"(stvec));
+    __asm__ volatile("csrr %[stvec], stvec" : [stvec] "=r"(stvec));
     return stvec;
 }
 
 inline void Riscv::w_stvec(uint64 stvec)
 {
-    __asm__ volatile ("csrw stvec, %[stvec]" : : [stvec] "r"(stvec));
+    __asm__ volatile("csrw stvec, %[stvec]" : : [stvec] "r"(stvec));
 }
 
 inline uint64 Riscv::r_stval()
 {
     uint64 volatile stval;
-    __asm__ volatile ("csrr %[stval], stval" : [stval] "=r"(stval));
+    __asm__ volatile("csrr %[stval], stval" : [stval] "=r"(stval));
     return stval;
 }
 
 inline void Riscv::w_stval(uint64 stval)
 {
-    __asm__ volatile ("csrw stval, %[stval]" : : [stval] "r"(stval));
+    __asm__ volatile("csrw stval, %[stval]" : : [stval] "r"(stval));
 }
 
 inline void Riscv::ms_sip(uint64 mask)
 {
-    __asm__ volatile ("csrs sip, %[mask]" : : [mask] "r"(mask));
+    __asm__ volatile("csrs sip, %[mask]" : : [mask] "r"(mask));
 }
 
 inline void Riscv::mc_sip(uint64 mask)
 {
-    __asm__ volatile ("csrc sip, %[mask]" : : [mask] "r"(mask));
+    __asm__ volatile("csrc sip, %[mask]" : : [mask] "r"(mask));
 }
 
 inline uint64 Riscv::r_sip()
 {
     uint64 volatile sip;
-    __asm__ volatile ("csrr %[sip], sip" : [sip] "=r"(sip));
+    __asm__ volatile("csrr %[sip], sip" : [sip] "=r"(sip));
     return sip;
 }
 
 inline void Riscv::w_sip(uint64 sip)
 {
-    __asm__ volatile ("csrw sip, %[sip]" : : [sip] "r"(sip));
+    __asm__ volatile("csrw sip, %[sip]" : : [sip] "r"(sip));
 }
 
 inline void Riscv::ms_sstatus(uint64 mask)
 {
-    __asm__ volatile ("csrs sstatus, %[mask]" : : [mask] "r"(mask));
+    __asm__ volatile("csrs sstatus, %[mask]" : : [mask] "r"(mask));
 }
 
 inline void Riscv::mc_sstatus(uint64 mask)
 {
-    __asm__ volatile ("csrc sstatus, %[mask]" : : [mask] "r"(mask));
+    __asm__ volatile("csrc sstatus, %[mask]" : : [mask] "r"(mask));
 }
 
 inline uint64 Riscv::r_sstatus()
 {
     uint64 volatile sstatus;
-    __asm__ volatile ("csrr %[sstatus], sstatus" : [sstatus] "=r"(sstatus));
+    __asm__ volatile("csrr %[sstatus], sstatus" : [sstatus] "=r"(sstatus));
     return sstatus;
 }
 
 inline void Riscv::w_sstatus(uint64 sstatus)
 {
-    __asm__ volatile ("csrw sstatus, %[sstatus]" : : [sstatus] "r"(sstatus));
+    __asm__ volatile("csrw sstatus, %[sstatus]" : : [sstatus] "r"(sstatus));
 }
 
-
-
-#endif //OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_RISCV_HPP
+#endif // OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_RISCV_HPP

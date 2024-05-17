@@ -6,9 +6,10 @@
 #define OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_PRINT_HPP
 
 #include "../lib/hw.h"
+#include "../test/printing.hpp"
 
-extern void printString(char const *string);
+// extern void printString(char const *string);
 
-extern void printInteger(uint64 integer);
+// extern void printInt(int xx, int base = 10, int sgn = 0);
 
-#endif //OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_PRINT_HPP
+#endif // OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_PRINT_HPP

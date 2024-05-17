@@ -1,12 +1,12 @@
 //
 // Created by marko on 20.4.22..
 //
-
+/*
 #include "../lib/hw.h"
 #include "../h/_thread.hpp"
 #include "../h/print.hpp"
 #include "../h/syscall_c.hpp"
-void workerBodyA(_sem* mutexAB)
+void workerBodyA(_sem *mutexAB)
 {
     for (uint64 i = 0; i < 10; i++)
     {
@@ -35,7 +35,7 @@ void workerBodyA(_sem* mutexAB)
     printString("A: THREAD A DYING BYE BYE.\n");
 }
 
-void workerBodyB(_sem* mutexAB)
+void workerBodyB(_sem *mutexAB)
 {
     for (uint64 i = 0; i < 16; i++)
     {
@@ -44,7 +44,7 @@ void workerBodyB(_sem* mutexAB)
         printString("\n");
         for (uint64 j = 0; j < 5; j++)
         {
-            uint x =(uint64)sem_wait(mutexAB);
+            uint x = (uint64)sem_wait(mutexAB);
             printString("B sem_wait: ");
             printInteger(x);
             printString("\n");
@@ -69,9 +69,12 @@ void workerBodyB(_sem* mutexAB)
 
 static uint64 fibonacci(uint64 n)
 {
-    if (n == 0 || n == 1) { return n; }
-    if (n % 10 == 0) {
-        /*printString("FIBONACCI DISPATCH\n");*/
+    if (n == 0 || n == 1)
+    {
+        return n;
+    }
+    if (n % 10 == 0)
+    {
         thread_dispatch();
     }
     return fibonacci(n - 1) + fibonacci(n - 2);
@@ -88,11 +91,11 @@ void workerBodyC()
     }
 
     printString("C: yield\n");
-    __asm__ ("li t1, 7");
+    __asm__("li t1, 7");
     thread_dispatch();
 
     uint64 t1 = 0;
-    __asm__ ("mv %[t1], t1" : [t1] "=r"(t1));
+    __asm__("mv %[t1], t1" : [t1] "=r"(t1));
 
     printString("C: t1=");
     printInteger(t1);
@@ -113,7 +116,7 @@ void workerBodyC()
         printInteger(i);
         printString("\n");
     }
-//    TCB::yield();
+    //    TCB::yield();
 }
 
 void workerBodyD()
@@ -127,7 +130,7 @@ void workerBodyD()
     }
 
     printString("D: yield\n");
-    __asm__ ("li t1, 5");
+    __asm__("li t1, 5");
     thread_dispatch();
 
     uint64 result = fibonacci(16);
@@ -142,4 +145,4 @@ void workerBodyD()
         printString("\n");
     }
     printString("D: THREAD D DYING BYE BYE.\n");
-}
+}*/
