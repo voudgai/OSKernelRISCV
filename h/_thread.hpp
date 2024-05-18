@@ -39,6 +39,8 @@ public:
     bool isFinished() const { return finished; }
     void setFinished(bool value) { finished = value; }
 
+    bool isSleeping() const { return sleeping; }
+
     semResponses getWaitingStatus() const { return waitResponse; }
     void setWaitingStatus(semResponses response) { waitResponse = response; }
 
@@ -58,7 +60,8 @@ private:
                                                                   stack != nullptr ? (uint64)stack_space : 0}),
                                                          timeSlice(TIME_SLICE),
                                                          finished(false),
-                                                         parentThread(running)
+                                                         parentThread(running),
+                                                         sleeping(false)
     {
         if (body != nullptr)
         {
@@ -85,17 +88,26 @@ private:
     _thread *parentThread;
 
     semResponses waitResponse = NON_WAITING;
-    uint64 timedWait_semTimeRelease = 0; // for timedWait(), latest time semaphore must release this thread
+    uint64 timedWait_semTimeRelease = 0; // for timedWait(), latest time semaphore must release this thread,
+                                         // this value doesnt mean much now, but only when timedwait is called
+
+    bool sleeping; // for thread_sleep
+    uint64 timeForWakingUp;
+
+    static void putThreadToSleep(uint64 timeAsleep);
+    static void wakeAsleepThreads();
+    static List<_thread> listAsleepThreads;
+    static uint64 numOfThreadsAsleep;
 
     static void threadWrapper();
-
     static void contextSwitch(Context *oldContext, Context *runningContext);
-
     static void dispatch();
-
     static void exit();
 
     static uint64 timeSliceCounter;
+    static inline uint64 getTimeSliceCounter() { return timeSliceCounter; }
+    static inline void incTimeSliceCounter(uint64 i = 1) { timeSliceCounter += i; }
+    static inline void resetTimeSliceCounter() { timeSliceCounter = 0; }
 
     static uint64 constexpr STACK_SIZE = DEFAULT_STACK_SIZE / sizeof(uint64);
     static uint64 constexpr TIME_SLICE = DEFAULT_TIME_SLICE;

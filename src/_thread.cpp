@@ -6,8 +6,9 @@
 #include "../h/syscall_c.hpp"
 
 _thread *_thread::running = nullptr;
-
 uint64 _thread::timeSliceCounter = 0;
+List<_thread> _thread::listAsleepThreads;
+uint64 _thread::numOfThreadsAsleep = 0;
 
 _thread *_thread::createThread(Body body, void *arg, uint64 *stack_space)
 {
@@ -17,7 +18,10 @@ _thread *_thread::createThread(Body body, void *arg, uint64 *stack_space)
 void _thread::dispatch()
 {
     _thread *old = running;
-    if (!old->isFinished() && old->getWaitingStatus() != WAITING && old->getWaitingStatus() != TIMEDWAITING)
+    if (!old->isFinished() &&
+        !old->isSleeping() &&
+        old->getWaitingStatus() != WAITING &&
+        old->getWaitingStatus() != TIMEDWAITING)
     {
         Scheduler::put(old);
     }
@@ -32,18 +36,41 @@ void _thread::exit()
     dispatch();
 }
 
+void _thread::putThreadToSleep(uint64 timeAsleep)
+{
+    _thread::running->sleeping = true;
+    _thread::running->timeForWakingUp = Riscv::getSystemTime() + timeAsleep;
+
+    numOfThreadsAsleep++;
+    listAsleepThreads.addLast(_thread::running);
+    dispatch();
+}
+
+void _thread::wakeAsleepThreads()
+{
+    uint64 systemTime = Riscv::getSystemTime();
+    uint64 N = numOfThreadsAsleep;
+    for (uint64 i = 0; i < N; i++)
+    {
+        _thread *old = listAsleepThreads.removeFirst();
+        if (old->timeForWakingUp <= systemTime)
+        {
+            old->sleeping = false;
+            old->timeForWakingUp = 0;
+            numOfThreadsAsleep--;
+
+            Scheduler::put(old);
+        }
+        else
+        {
+            listAsleepThreads.addLast(old);
+        }
+    }
+}
+
 void _thread::threadWrapper()
 {
-    // printString("THREAD WRAPPER\n");
     Riscv::popSppSpieChangeMod();
     running->body(running->arg);
     thread_exit();
 }
-
-/*void _thread::printThread() {
-    printString("Ovo je thread sa funkcijom koja pocinje na mestu ");
-    printInteger((uint64) body);
-    printString( " a stek je na ");
-    printInteger((uint64)stack);
-    printString("\n");
-}*/

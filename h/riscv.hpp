@@ -9,7 +9,8 @@
 class Riscv
 {
 public:
-    static uint64 SYS_TIME;
+    static inline uint64 getSystemTime() { return SYS_TIME; }
+
     // pop sstatus.spp and sstatus.spie bits (has to be a non inline function)
     static void popSppSpieChangeMod();
 
@@ -111,6 +112,8 @@ public:
     static void supervisorTrap();
 
 private:
+    static uint64 SYS_TIME;
+    static inline void incSysTime(uint64 i = 1) { SYS_TIME += i; }
     // supervisor trap handler
     static void handleSupervisorTrap();
 };

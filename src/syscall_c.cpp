@@ -216,6 +216,22 @@ int sem_trywait(sem_t id)
     __asm__ volatile("mv %0, a0" : "=r"(result));
     return result;
 }
+
+int time_sleep(time_t timeAsleep)
+{
+    static const int volatile trapCode = 0x31;
+
+    if (timeAsleep == 0)
+        return 0;
+
+    __asm__ volatile("mv a1, %[time]" : : [time] "r"(timeAsleep));
+    __asm__ volatile("mv a0, %[trapCode]" : : [trapCode] "r"(trapCode));
+    __asm__ volatile("ecall");
+
+    int volatile result;
+    __asm__ volatile("mv %0, a0" : "=r"(result));
+    return result;
+}
 char getc()
 {
     /*

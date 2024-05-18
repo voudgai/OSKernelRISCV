@@ -22,12 +22,14 @@ public:
     explicit _sem(uint64 N = 1) : val(N)
     {
         allSemaphores.addLast(this);
+        numOfAllSemaphores++;
     };
 
     ~_sem()
     {
         unblockAll_CLOSING();
         allSemaphores.removeSpec(this);
+        numOfAllSemaphores--;
     }
     void wait();
     void timedWait(uint64 timeForRelease); // ovaj timeForRelease ce biti systime + koliko ceka maksimalno
@@ -41,14 +43,17 @@ protected:
     void timedBlock(uint64 timeForRelease);
     void unblock();
     void unblockAll_CLOSING();
-    void unblockTimesUp(uint64 systemTime);
+    void unblockTimesUp();
 
 private:
     long int val;
-    uint64 numOfTimedWaiting = 0;
     List<_thread> queueBlocked;
+
+    uint64 numOfTimedWaiting = 0;
     List<_thread> queueTimedBlock;
-    List<_sem> allSemaphores;
+
+    static List<_sem> allSemaphores;
+    static uint64 numOfAllSemaphores;
 };
 
 #endif // PROJECT_FOR_REAL__SEM_HPP

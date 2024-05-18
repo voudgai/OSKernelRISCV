@@ -8,7 +8,7 @@ uint64 Riscv::SYS_TIME = 0;
 class Console;
 
 inline void checkECALL(uint64 scause);
-// inline void checkTIMER(uint64 scause);
+inline void checkTIMER(uint64 scause);
 inline void checkCONSOLE(uint64 scause);
 inline void checkELSE(uint64 scause) {};
 
@@ -19,20 +19,7 @@ void Riscv::popSppSpieChangeMod()
     __asm__ volatile("sret");
 }
 
-/*enum Registri{zero = 0,ra = 1,sp = 2,s0 = 8,s1,a0 = 10,a1,a2,a3,a4,a5};
-inline void write_register_fp(Registri reg, uint64 val){
-    int volatile pomeraj = reg * 8;
-    uint64 volatile adresa;
-    // adresa = pomeraj + frame pointer
-    __asm__ volatile("add %[adr], %[pom], fp" :[adr] "=r"(adresa): [pom] "r"(pomeraj));
-    __asm__ volatile("sd %[val], (%[adr])" :: [val] "r"(val), [adr] "r"(adresa));
-}*/
-/*inline uint64 read_register_fp(uint64 reg) {
-    uint64 volatile value;
-    __asm__ volatile("ld %[value], 8*%[reg](fp)" : [value] "=r"(value) : [reg] "n"(reg));
-    return value;
-
-}*/
+/*enum Registri{zero = 0,ra = 1,sp = 2,s0 = 8,s1,a0 = 10,a1,a2,a3,a4,a5};*/
 
 inline void mem_alloc_wrapper();
 inline void mem_free_wrapper();
@@ -41,8 +28,9 @@ inline void sem_open_wrapper();
 inline void sem_close_wrapper();
 inline void sem_wait_wrapper();
 inline void sem_signal_wrapper();
-inline void sem_timedwait_wrapper(uint64 SYSTIME);
+inline void sem_timedwait_wrapper();
 inline void sem_trywait_wrapper();
+inline void time_sleep_wrapper();
 
 void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
 {
@@ -90,11 +78,19 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
             sem_signal_wrapper();
             break;
         case Riscv::SEM_TIMEDWAIT:
-            sem_timedwait_wrapper(Riscv::SYS_TIME);
+            sem_timedwait_wrapper();
             break;
         case Riscv::SEM_TRYWAIT:
+            sem_trywait_wrapper();
             break;
         case Riscv::TIME_SLEEP:
+            time_t timeAsleep;
+            __asm__ volatile("ld %[time], 11 * 8(fp)" : [time] "=r"(timeAsleep));
+
+            _thread::putThreadToSleep(timeAsleep);
+
+            result = 1;
+            __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
             break;
         case Riscv::GETC:
             result = Console::getc();
@@ -116,6 +112,29 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
     else if (scause == Riscv::TIMER)
     {
         Riscv::mc_sip(Riscv::SIP_SSIP);
+
+        { // release timedwait threads from all semaphores
+            Riscv::incSysTime();
+            for (uint64 i = 0; i < _sem::numOfAllSemaphores; i++)
+            {
+                _sem *curSemaphore = _sem::allSemaphores.removeFirst();
+                curSemaphore->unblockTimesUp();
+                _sem::allSemaphores.addLast(curSemaphore);
+            }
+        }
+
+        { // preemption if needed
+            _thread::incTimeSliceCounter();
+            if (_thread::getTimeSliceCounter() >= _thread::running->getTimeSlice())
+            {
+                _thread::resetTimeSliceCounter();
+                _thread::dispatch();
+            }
+        }
+
+        { // wake-up asleep threads if needed
+            _thread::wakeAsleepThreads();
+        }
     }
     else if (scause == Riscv::CONSOLE)
     {
@@ -233,7 +252,7 @@ inline void sem_signal_wrapper()
     handle->signal();
 }
 
-inline void sem_timedwait_wrapper(uint64 SYSTIME)
+inline void sem_timedwait_wrapper()
 {
     _sem *handle;
     uint64 timeout;
@@ -245,7 +264,7 @@ inline void sem_timedwait_wrapper(uint64 SYSTIME)
 
     if (handle == nullptr)
         return;
-    handle->timedWait(SYSTIME + timeout);
+    handle->timedWait(Riscv::getSystemTime() + timeout);
 }
 
 inline void sem_trywait_wrapper()
@@ -262,35 +281,7 @@ inline void sem_trywait_wrapper()
     result = handle->tryWait();
     __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
 }
-/*inline void checkTIMER (uint64 scause) {
 
-    // interrupt: yes; cause code: supervisor software interrupt (CLINT; machine timer interrupt)
-    Riscv::mc_sip(SIP_SSIP);
-    Riscv::SYS_TIME++;
-    Thread::timeSliceCounter++;
-    if ( Thread::timeSliceCounter >= Thread::running->getTimeSlice())
-    {
-        preemption_wrapper();
-    }
-
-}*/
-/*inline void Riscv::dispatch_wrapper()
-{
-    _thread::timeSliceCounter = 0;
-    _thread::dispatch();
-}
-
-inline void Riscv::yield_wrapper()
-{
-    uint64 volatile sepc = Riscv::r_sepc();
-    uint64 volatile sstatus = Riscv::r_sstatus();
-
-    Riscv::dispatch_wrapper();
-
-    Riscv::w_sstatus(sstatus);
-    Riscv::w_sepc(sepc);
-}
-*/
 inline void checkCONSOLE(uint64 scause)
 {
     // interrupt: yes; cause code: supervisor external interrupt (PLIC; could be keyboard)
