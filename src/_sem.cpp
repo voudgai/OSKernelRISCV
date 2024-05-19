@@ -49,8 +49,9 @@ void _sem::block()
     // za stari, a za novi su svakako sacuvani
 }
 
-void _sem::timedBlock(uint64 timeForRelease)
+void _sem::timedBlock(uint64 timeSleepingAtMost)
 {
+    uint64 timeForRelease = timeSleepingAtMost + Riscv::getSystemTime();
     numOfTimedWaiting++;
     _thread *old = _thread::running;
     queueTimedBlock.addLast(old);

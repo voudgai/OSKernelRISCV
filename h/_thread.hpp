@@ -52,6 +52,8 @@ public:
 
     static _thread *running;
 
+    static int subtleKill(_thread *threadToBeKilled);
+
 private:
     _thread(Body body, void *arg, uint64 *stack_space) : body(body),
                                                          arg(arg),
@@ -67,7 +69,7 @@ private:
         {
             Scheduler::put(this);
         }
-        if (_thread::running == nullptr)
+        if (_thread::running == nullptr && body == nullptr)
         {
             _thread::running = this;
         }
@@ -92,7 +94,7 @@ private:
                                          // this value doesnt mean much now, but only when timedwait is called
 
     bool sleeping; // for thread_sleep
-    uint64 timeForWakingUp;
+    uint64 timeForWakingUp = 0;
 
     static void putThreadToSleep(uint64 timeAsleep);
     static void wakeAsleepThreads();

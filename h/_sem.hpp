@@ -40,7 +40,7 @@ public:
 
 protected:
     void block();
-    void timedBlock(uint64 timeForRelease);
+    void timedBlock(uint64 timeSleepingAtMost);
     void unblock();
     void unblockAll_CLOSING();
     void unblockTimesUp();

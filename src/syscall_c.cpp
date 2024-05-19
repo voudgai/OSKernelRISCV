@@ -234,24 +234,22 @@ int time_sleep(time_t timeAsleep)
 }
 char getc()
 {
-    /*
     static const int volatile trapCode = 0x41;
 
     __asm__ volatile("mv a0, %[trapCode]" : : [trapCode] "r"(trapCode));
     __asm__ volatile("ecall");
 
-    int volatile result;
+    char result;
     __asm__ volatile("mv %0, a0" : "=r"(result));
-    return result;*/
-    return __getc();
+    return result;
 }
 
 void putc(char c)
 {
-    __putc(c);
-    /*static const int volatile trapCode = 0x41;
+    static const int volatile trapCode = 0x42;
     __asm__ volatile("mv a1, %[ch]" : : [ch] "r"(c));
     __asm__ volatile("mv a0, %[trapCode]" : : [trapCode] "r"(trapCode));
     __asm__ volatile("ecall");
-    return;*/
+
+    return;
 }

@@ -5,6 +5,7 @@
 #include "../lib/hw.h"
 #include "_thread.hpp"
 #include "_sem.hpp"
+#include "_console.hpp"
 
 class Riscv
 {

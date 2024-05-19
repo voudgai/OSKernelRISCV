@@ -4,7 +4,7 @@
 
 static volatile bool finished[2];
 
-/*static void sleepyRun(void *arg)
+static void sleepyRun(void *arg)
 {
     time_t sleep_time = *((time_t *)arg);
     int i = 6;
@@ -16,13 +16,13 @@ static volatile bool finished[2];
         printString(" !\n");
         time_sleep(sleep_time);
     }
-    finished[sleep_time / 10 - 1] = true;
-}*/
+    finished[sleep_time / 100 - 1] = true;
+}
 
 void testSleeping()
 {
-    /*const int sleepy_thread_count = 2;
-    time_t sleep_times[sleepy_thread_count] = {10, 20};
+    const int sleepy_thread_count = 2;
+    time_t sleep_times[sleepy_thread_count] = {100, 200};
     thread_t sleepyThread[sleepy_thread_count];
 
     for (int i = 0; i < sleepy_thread_count; i++)
@@ -32,5 +32,5 @@ void testSleeping()
 
     while (!(finished[0] && finished[1]))
     {
-    }*/
+    }
 }

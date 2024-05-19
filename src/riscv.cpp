@@ -3,14 +3,29 @@
 #include "../lib/console.h"
 #include "../h/memoryAllocator.hpp"
 #include "../h/syscall_cpp.hpp"
+#include "../h/killQEMU.hpp"
+
+extern void killQEMU();
+
 uint64 Riscv::SYS_TIME = 0;
 
 class Console;
 
-inline void checkECALL(uint64 scause);
-inline void checkTIMER(uint64 scause);
-inline void checkCONSOLE(uint64 scause);
-inline void checkELSE(uint64 scause) {};
+inline void checkCONSOLE();
+inline void checkELSE()
+{
+    __putc('U');
+    __putc('N');
+    __putc('K');
+    __putc('N');
+    __putc('W');
+    __putc('N');
+    __putc('\n');
+    killQEMU();
+    volatile int waiter = 1;
+    while (waiter)
+        ;
+};
 
 void Riscv::popSppSpieChangeMod()
 {
@@ -93,20 +108,32 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
             __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
             break;
         case Riscv::GETC:
-            result = Console::getc();
-            __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+            result = _console::getCharFromBuffer();
+
+            while (result < 0 || result > 127)
+            {
+                _thread::putThreadToSleep(4);
+                result = _console::getCharFromBuffer();
+            }
+
+            __asm__ volatile("sb %[result], 10 * 8(fp)" : : [result] "r"(result));
             break;
         case Riscv::PUTC:
             char c;
             __asm__ volatile("ld %[chr], 11 * 8(fp)" : [chr] "=r"(c));
-            Console::putc(c);
+            _console::putCharInBuffer(c);
             break;
         default:
             __putc('G');
-            thread_exit();
-            while (1)
+            __putc('R');
+            __putc('S');
+            __putc('K');
+            __putc('.');
+            __putc('\n');
+            killQEMU();
+            volatile int waiter = 1;
+            while (waiter)
                 ;
-            break;
         }
     }
     else if (scause == Riscv::TIMER)
@@ -138,7 +165,15 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
     }
     else if (scause == Riscv::CONSOLE)
     {
-        checkCONSOLE(scause);
+        int intNumber = plic_claim();
+        if (intNumber == 0xa)
+        {
+            _console::setConsoleInterrupt(true);
+            /*__putc('C');
+            __putc('O');
+            __putc('N');
+            __putc('\n');*/
+        }
     }
     else if (scause == Riscv::ILLEGAL_INSTRUCTION)
     {
@@ -146,7 +181,22 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
         __putc('R');
         __putc('R');
         __putc('\n');
-        _thread::exit();
+        killQEMU();
+        volatile int waiter = 1;
+        while (waiter)
+            ;
+        //_thread::exit();
+    }
+    else if (scause == Riscv::ILLEGAL_RD_ADDR)
+    {
+        __putc('A');
+        __putc('D');
+        __putc('R');
+        __putc('\n');
+        killQEMU();
+        volatile int waiter = 1;
+        while (waiter)
+            ;
     }
     else
     {
@@ -154,6 +204,10 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
         __putc('M');
         __putc('P');
         __putc('\n');
+        killQEMU();
+        volatile int waiter = 1;
+        while (waiter)
+            ;
     }
     Riscv::w_sstatus(sstatus);
     Riscv::w_sepc(sepc);
@@ -264,7 +318,7 @@ inline void sem_timedwait_wrapper()
 
     if (handle == nullptr)
         return;
-    handle->timedWait(Riscv::getSystemTime() + timeout);
+    handle->timedWait(timeout);
 }
 
 inline void sem_trywait_wrapper()
@@ -282,8 +336,6 @@ inline void sem_trywait_wrapper()
     __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
 }
 
-inline void checkCONSOLE(uint64 scause)
+inline void checkCONSOLE()
 {
-    // interrupt: yes; cause code: supervisor external interrupt (PLIC; could be keyboard)
-    console_handler();
 }

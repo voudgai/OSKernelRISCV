@@ -15,6 +15,17 @@ _thread *_thread::createThread(Body body, void *arg, uint64 *stack_space)
     return new _thread(body, arg, stack_space);
 }
 
+int _thread::subtleKill(_thread *threadToBeKilled)
+{
+    if (_thread::running->body != nullptr)
+        return -1; // only main function can kill other threads
+    if (_thread::running == threadToBeKilled)
+        return -1; // main cannot kill himself
+
+    threadToBeKilled->setFinished(true);
+    thread_dispatch();
+    return 0;
+}
 void _thread::dispatch()
 {
     _thread *old = running;
@@ -26,7 +37,10 @@ void _thread::dispatch()
         Scheduler::put(old);
     }
     running = Scheduler::get();
-
+    while (running->isFinished() == true) // for the case we subtleKill() the thread which was still in Scheduler
+    {
+        running = Scheduler::get();
+    }
     _thread::contextSwitch(&old->context, &running->context);
 }
 
