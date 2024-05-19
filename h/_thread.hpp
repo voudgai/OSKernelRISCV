@@ -73,6 +73,11 @@ private:
         {
             _thread::running = this;
         }
+        /*if (body == character_getter_thread || body == character_putter_thread) // in case this is kernel thread for prinitng or getting chars,
+                                                                                // make its time slice bigger
+        {
+            timeSlice = 5;
+        }*/
     }
 
     struct Context

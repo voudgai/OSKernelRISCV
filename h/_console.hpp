@@ -13,7 +13,7 @@ private:
     static inline int putCharInBuffer(char ch);
     static inline char getCharFromBuffer();
 
-    static constexpr uint64 NUM_OF_CHARS = 256;
+    static constexpr uint64 NUM_OF_CHARS = 1024;
 
     static uint64 headPrint;
     static uint64 tailPrint;

@@ -59,12 +59,19 @@ void character_putter_thread(void *)
 
             _console::putCharInTerminal(ch);
 
-            _console::setConsoleInterrupt(false);
-            plic_complete(0xa);
             sem_signal(_console::semPut);
         }
         else
         {
+            if (_console::checkTerminalReceive() == false &&
+                _console::checkTerminalTransfer() == false &&
+                _console::isConsoleInterrupt() == true)
+            {
+                _console::setConsoleInterrupt(false); // if there was interrupt and the job is done,
+                                                      // there is nothing more to do, reset flag and signal the console
+                plic_complete(0xa);
+            }
+
             sem_signal(_console::semTransfer);
             thread_dispatch();
         }
@@ -81,12 +88,19 @@ void character_getter_thread(void *)
             _console::bufferGet[_console::headGet] = _console::getCharFromTerminal();
             _console::headGet = (_console::headGet + 1) % _console::NUM_OF_CHARS;
 
-            _console::setConsoleInterrupt(false);
-            plic_complete(0xa);
             sem_signal(_console::semGet);
         }
         else
         {
+            if (_console::checkTerminalReceive() == false &&
+                _console::checkTerminalTransfer() == false &&
+                _console::isConsoleInterrupt() == true)
+            {
+                _console::setConsoleInterrupt(false); // if there was interrupt and the job is done,
+                                                      // there is nothing more to do, reset flag and signal the console
+                plic_complete(0xa);
+            }
+
             sem_signal(_console::semReceive);
             thread_dispatch();
         }
