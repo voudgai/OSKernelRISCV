@@ -115,8 +115,12 @@ public:
 private:
     static uint64 SYS_TIME;
     static inline void incSysTime(uint64 i = 1) { SYS_TIME += i; }
+
     // supervisor trap handler
     static void handleSupervisorTrap();
+
+    // error printer in S mode
+    inline static void error_printer(char s[]);
 };
 
 inline uint64 Riscv::r_scause()
@@ -209,6 +213,31 @@ inline uint64 Riscv::r_sstatus()
 inline void Riscv::w_sstatus(uint64 sstatus)
 {
     __asm__ volatile("csrw sstatus, %[sstatus]" : : [sstatus] "r"(sstatus));
+}
+
+inline void Riscv::error_printer(char s[])
+{
+    while (*s != '\0')
+    {
+        if (_console::checkTerminalTransfer() == true /*&& _console::isConsoleInterrupt()*/)
+        {
+            char ch = *s;
+            s++;
+            _console::putCharInTerminal(ch);
+        }
+    }
+    char end[] = {'F', 'A', 'T', 'A', 'L', '!', '\n', '\0'};
+    int i = 0;
+    while (i <= 6)
+    {
+        if (_console::checkTerminalTransfer() == true /*&& _console::isConsoleInterrupt()*/)
+        {
+            char ch = end[i];
+            i++;
+            _console::putCharInTerminal(ch);
+        }
+    }
+    plic_complete(0xa);
 }
 
 #endif // OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_RISCV_HPP

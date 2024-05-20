@@ -2,10 +2,10 @@
 
 char Console::getc()
 {
-    return __getc();
+    return 'g';
 }
 
 void Console::putc(char c)
 {
-    __putc(c);
+    //__putc(c);
 }

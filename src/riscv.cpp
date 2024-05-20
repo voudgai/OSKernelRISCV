@@ -11,16 +11,16 @@ uint64 Riscv::SYS_TIME = 0;
 
 class Console;
 
-inline void checkCONSOLE();
+// inline void checkCONSOLE();
 inline void checkELSE()
 {
-    __putc('U');
+    /*__putc('U');
     __putc('N');
     __putc('K');
     __putc('N');
     __putc('W');
     __putc('N');
-    __putc('\n');
+    __putc('\n');*/
     killQEMU();
     volatile int waiter = 1;
     while (waiter)
@@ -124,12 +124,8 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
             _console::putCharInBuffer(c);
             break;
         default:
-            __putc('G');
-            __putc('R');
-            __putc('S');
-            __putc('K');
-            __putc('.');
-            __putc('\n');
+            char errorText[] = {'U', 'n', 'k', 'n', 'o', 'w', 'n', ' ', 'E', 'C', 'A', 'L', 'L', ' ', 'T', 'r', 'a', 'p', 'C', 'o', 'd', 'e', '!', '\n', '\0'};
+            Riscv::error_printer(errorText);
             killQEMU();
             volatile int waiter = 1;
             while (waiter)
@@ -169,18 +165,14 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
         if (intNumber == 0xa)
         {
             _console::setConsoleInterrupt(true);
-            /*__putc('C');
-            __putc('O');
-            __putc('N');
-            __putc('\n');*/
+            /*char errorText[] = {'C', 'o', 'n', 's', 'o', 'l', 'e', '!','\n', '\0'};
+            Riscv::error_printer(errorText);*/
         }
     }
     else if (scause == Riscv::ILLEGAL_INSTRUCTION)
     {
-        __putc('E');
-        __putc('R');
-        __putc('R');
-        __putc('\n');
+        char errorText[] = {'I', 'l', 'l', 'e', 'g', 'a', 'l', ' ', 'i', 'n', 's', 't', 'r', 'u', 'c', 't', 'i', 'o', 'n', '!', '\n', '\0'};
+        Riscv::error_printer(errorText);
         killQEMU();
         volatile int waiter = 1;
         while (waiter)
@@ -189,10 +181,8 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
     }
     else if (scause == Riscv::ILLEGAL_RD_ADDR)
     {
-        __putc('A');
-        __putc('D');
-        __putc('R');
-        __putc('\n');
+        char errorText[] = {'I', 'l', 'l', 'e', 'g', 'a', 'l', ' ', 'a', 'd', 'd', 'r', 'e', 's', 's', '!', '\n', '\0'};
+        Riscv::error_printer(errorText);
         killQEMU();
         volatile int waiter = 1;
         while (waiter)
@@ -200,10 +190,8 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
     }
     else
     {
-        __putc('N');
-        __putc('M');
-        __putc('P');
-        __putc('\n');
+        char errorText[] = {'U', 'n', 'k', 'n', 'o', 'w', 'n', ' ', 'I', 'N', 'T', 'R', '!', '\n', '\0'};
+        Riscv::error_printer(errorText);
         killQEMU();
         volatile int waiter = 1;
         while (waiter)
@@ -336,6 +324,6 @@ inline void sem_trywait_wrapper()
     __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
 }
 
-inline void checkCONSOLE()
+/*inline void checkCONSOLE()
 {
-}
+}*/
