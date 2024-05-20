@@ -3,7 +3,7 @@
 //
 #include "../h/_thread.hpp"
 #include "../h/riscv.hpp"
-#include "../h/syscall_c.hpp"
+#include "../h/syscall_c.h"
 
 _thread *_thread::running = nullptr;
 uint64 _thread::timeSliceCounter = 0;

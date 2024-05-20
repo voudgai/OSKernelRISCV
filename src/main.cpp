@@ -4,7 +4,7 @@
 #include "../h/print.hpp"
 #include "../h/riscv.hpp"
 #include "../h/memoryAllocator.hpp"
-#include "../h/syscall_c.hpp"
+#include "../h/syscall_c.h"
 #include "../h/_thread.hpp"
 #include "../h/killQEMU.hpp"
 
@@ -35,11 +35,10 @@ int main()
     thread_create(&getc_thread, character_getter_thread, nullptr);
 
     thread_create(&userMain_thread, funcWrapper, nullptr);
-    while (!(userMain_thread->isFinished()))
+    while (!userMain_thread->isFinished() || _console::isThereAnythingToPrint())
     {
         thread_dispatch();
     }
-
     _thread::subtleKill(putc_thread);
     _thread::subtleKill(getc_thread);
     thread_dispatch();

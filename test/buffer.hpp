@@ -5,11 +5,10 @@
 #ifndef OS1_BUFFER_CPP_H
 #define OS1_BUFFER_CPP_H
 
-#include "../h/syscall_c.hpp"
+#include "../h/syscall_c.h"
 #include "printing.hpp"
 
-class Buffer
-{
+class Buffer {
 private:
     int cap;
     int *buffer;
@@ -28,6 +27,9 @@ public:
     int get();
 
     int getCnt();
+
 };
 
-#endif // OS1_BUFFER_CPP_H
+
+#endif //OS1_BUFFER_CPP_H
+

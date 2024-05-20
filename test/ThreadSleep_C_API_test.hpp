@@ -3,4 +3,4 @@
 
 void testSleeping();
 
-#endif // XV6_THREADSLEEP_C_API_TEST_HPP
+#endif //XV6_THREADSLEEP_C_API_TEST_HPP

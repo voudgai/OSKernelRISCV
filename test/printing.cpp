@@ -6,10 +6,8 @@
 
 uint64 lockPrint = 0;
 
-#define LOCK()                             \
-    while (copy_and_swap(lockPrint, 0, 1)) \
-    thread_dispatch()
-#define UNLOCK() while (copy_and_swap(lockPrint, 1, 0))
+#define LOCK() while(copy_and_swap(lockPrint, 0, 1)) thread_dispatch()
+#define UNLOCK() while(copy_and_swap(lockPrint, 1, 0))
 
 void printString(char const *string)
 {
@@ -22,20 +20,18 @@ void printString(char const *string)
     UNLOCK();
 }
 
-char *getString(char *buf, int max)
-{
+char* getString(char *buf, int max) {
     LOCK();
     int i, cc;
     char c;
 
-    for (i = 0; i + 1 < max;)
-    {
+    for(i=0; i+1 < max; ){
         cc = getc();
-        if (cc < 1)
+        if(cc < 1)
             break;
         c = cc;
         buf[i++] = c;
-        if (c == '\n' || c == '\r')
+        if(c == '\n' || c == '\r')
             break;
     }
     buf[i] = '\0';
@@ -44,8 +40,7 @@ char *getString(char *buf, int max)
     return buf;
 }
 
-int stringToInt(const char *s)
-{
+int stringToInt(const char *s) {
     int n;
 
     n = 0;
@@ -64,25 +59,21 @@ void printInt(int xx, int base, int sgn)
     uint x;
 
     neg = 0;
-    if (sgn && xx < 0)
-    {
+    if(sgn && xx < 0){
         neg = 1;
         x = -xx;
-    }
-    else
-    {
+    } else {
         x = xx;
     }
 
     i = 0;
-    do
-    {
+    do{
         buf[i++] = digits[x % base];
-    } while ((x /= base) != 0);
-    if (neg)
+    }while((x /= base) != 0);
+    if(neg)
         buf[i++] = '-';
 
-    while (--i >= 0)
+    while(--i >= 0)
         putc(buf[i]);
 
     UNLOCK();

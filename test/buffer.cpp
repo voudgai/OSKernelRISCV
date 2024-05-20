@@ -1,7 +1,6 @@
 #include "buffer.hpp"
 
-Buffer::Buffer(int _cap) : cap(_cap + 1), head(0), tail(0)
-{
+Buffer::Buffer(int _cap) : cap(_cap + 1), head(0), tail(0) {
     buffer = (int *)mem_alloc(sizeof(int) * cap);
     sem_open(&itemAvailable, 0);
     sem_open(&spaceAvailable, _cap);
@@ -9,12 +8,10 @@ Buffer::Buffer(int _cap) : cap(_cap + 1), head(0), tail(0)
     sem_open(&mutexTail, 1);
 }
 
-Buffer::~Buffer()
-{
+Buffer::~Buffer() {
     putc('\n');
     printString("Buffer deleted!\n");
-    while (getCnt() > 0)
-    {
+    while (getCnt() > 0) {
         char ch = buffer[head];
         putc(ch);
         head = (head + 1) % cap;
@@ -29,8 +26,7 @@ Buffer::~Buffer()
     sem_close(mutexHead);
 }
 
-void Buffer::put(int val)
-{
+void Buffer::put(int val) {
     sem_wait(spaceAvailable);
 
     sem_wait(mutexTail);
@@ -39,10 +35,10 @@ void Buffer::put(int val)
     sem_signal(mutexTail);
 
     sem_signal(itemAvailable);
+
 }
 
-int Buffer::get()
-{
+int Buffer::get() {
     sem_wait(itemAvailable);
 
     sem_wait(mutexHead);
@@ -56,19 +52,15 @@ int Buffer::get()
     return ret;
 }
 
-int Buffer::getCnt()
-{
+int Buffer::getCnt() {
     int ret;
 
     sem_wait(mutexHead);
     sem_wait(mutexTail);
 
-    if (tail >= head)
-    {
+    if (tail >= head) {
         ret = tail - head;
-    }
-    else
-    {
+    } else {
         ret = cap - head + tail;
     }
 

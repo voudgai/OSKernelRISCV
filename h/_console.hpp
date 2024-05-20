@@ -1,15 +1,18 @@
 #include "../lib/hw.h"
-#include "./syscall_c.hpp"
+#include "./syscall_c.h"
 #include "../h/_sem.hpp"
 class _console
 {
 public:
+    static bool isThereAnythingToPrint() { return (headPrint - tailPrint) != 0; }
+
 private:
+    _console() = delete;
     static void init();
     friend void character_putter_thread(void *);
     friend void character_getter_thread(void *);
     friend class Riscv;
-    _console() = delete;
+
     static inline int putCharInBuffer(char ch);
     static inline char getCharFromBuffer();
 

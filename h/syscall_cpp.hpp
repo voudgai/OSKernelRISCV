@@ -1,6 +1,6 @@
 #ifndef _syscall_cpp
 #define _syscall_cpp
-#include "syscall_c.hpp"
+#include "syscall_c.h"
 
 void *operator new(size_t);
 void operator delete(void *);
@@ -21,6 +21,7 @@ private:
     thread_t myHandle;
     void (*body)(void *);
     void *arg;
+    static void run_wrapper(void *);
 };
 class Semaphore
 {
@@ -46,6 +47,7 @@ protected:
     virtual void periodicActivation() {}
 
 private:
+    static void periodicActivation_wrapper(void *);
     time_t period;
 };
 
