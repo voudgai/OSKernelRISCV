@@ -14,8 +14,7 @@ public:
 
     static void *_kmalloc(size_t numOfBlocks);
     static int _kmfree(void *);
-
-    // static void printMemory();
+    // static void printMemNOTINSYSCALL();
 private:
     static uint64 totalBlocks;
     static void *headFree;

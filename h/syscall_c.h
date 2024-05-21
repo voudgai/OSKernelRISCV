@@ -2,19 +2,6 @@
 #define _syscall_c
 
 #include "../lib/hw.h"
-#include "./memoryAllocator.hpp"
-#include "_thread.hpp"
-#include "../lib/console.h"
-
-/*void Console::putc
-{
-    return ::putc();
-}
-
-char Console::getc
-{
-    return ::getc();
-}*/
 
 void *mem_alloc(size_t size); // 0x01 // ZAOKRUZITI size NA CELOBROJNE BLOKOVE I POZVATI SISTEMSKI POZIV
 

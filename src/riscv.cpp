@@ -11,16 +11,8 @@ uint64 Riscv::SYS_TIME = 0;
 
 class Console;
 
-// inline void checkCONSOLE();
 inline void checkELSE()
 {
-    /*__putc('U');
-    __putc('N');
-    __putc('K');
-    __putc('N');
-    __putc('W');
-    __putc('N');
-    __putc('\n');*/
     killQEMU();
     volatile int waiter = 1;
     while (waiter)

@@ -1,7 +1,8 @@
 
 #include "../h/syscall_c.h"
-// #include "../lib/hw.h"
-// #include "../h/memoryAllocator.hpp"
+#include "../h/memoryAllocator.hpp"
+#include "../h/_thread.hpp"
+#include "../lib/console.h"
 
 void *mem_alloc(size_t size)
 {

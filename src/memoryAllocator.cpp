@@ -147,21 +147,23 @@ int memoryAllocator::_kmfree(void *toBeFreed)
     return 0;
 }
 /*
-void memoryAllocator::printMemory() {
-    init();
-    uint64* cur64 = (uint64*)headFree;
+void memoryAllocator::printMemNOTINSYSCALL()
+{
+    uint64 *cur64 = (uint64 *)headFree;
     printString("FreeMemory:\n");
-    for(; cur64; cur64 = (uint64*)cur64[0]){
-        printInteger((uint64)cur64);
+    for (; cur64; cur64 = (uint64 *)cur64[0])
+    {
+        printInt((uint64)cur64);
         printString(" - ");
-        printInteger((uint64)cur64 + cur64[1] * MEM_BLOCK_SIZE);
+        printInt((uint64)cur64 + cur64[1] * MEM_BLOCK_SIZE);
         printString("\n");
     }
     printString("TakenMemory:\n");
-    for(cur64 = (uint64*)headTaken; cur64; cur64 = (uint64*)cur64[0]){
-        printInteger((uint64)cur64);
+    for (cur64 = (uint64 *)headTaken; cur64; cur64 = (uint64 *)cur64[0])
+    {
+        printInt((uint64)cur64);
         printString(" - ");
-        printInteger((uint64)cur64 + cur64[1] * MEM_BLOCK_SIZE);
+        printInt((uint64)cur64 + cur64[1] * MEM_BLOCK_SIZE);
         printString("\n");
     }
     printString("\n");

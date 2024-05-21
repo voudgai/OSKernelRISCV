@@ -23,6 +23,8 @@ int _thread::subtleKill(_thread *threadToBeKilled)
         return -1; // main cannot kill himself
 
     threadToBeKilled->setFinished(true);
+    // Scheduler::queueThreads.removeSpec(threadToBeKilled);
+    //  memoryAllocator::kmfree(threadToBeKilled);
     thread_dispatch();
     return 0;
 }
@@ -36,6 +38,8 @@ void _thread::dispatch()
     {
         Scheduler::put(old);
     }
+    if (old->isFinished())
+        memoryAllocator::_kmfree(old);
     running = Scheduler::get();
     while (running->isFinished() == true) // for the case we subtleKill() the thread which was still in Scheduler
     {
@@ -47,6 +51,7 @@ void _thread::dispatch()
 void _thread::exit()
 {
     running->setFinished(true);
+    /* in dispatch(), if thread is finished it frees its memory*/
     dispatch();
 }
 

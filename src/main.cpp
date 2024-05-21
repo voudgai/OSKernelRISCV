@@ -14,6 +14,7 @@ void funcWrapper(void *);
 
 extern void killQEMU();
 extern void userMain();
+extern void mainCopeTest(void *p);
 
 extern void character_putter_thread(void *);
 extern void character_getter_thread(void *);
@@ -35,6 +36,8 @@ int main()
     thread_create(&getc_thread, character_getter_thread, nullptr);
 
     thread_create(&userMain_thread, funcWrapper, nullptr);
+    // thread_create(&userMain_thread, mainCopeTest, nullptr);
+
     while (!userMain_thread->isFinished() || _console::isThereAnythingToPrint())
     {
         thread_dispatch();
@@ -55,13 +58,3 @@ void funcWrapper(void *)
 {
     userMain();
 }
-
-/*void character_putter_wrapper(void *)
-{
-    character_putter_thread();
-}
-
-void character_getter_wrapper(void *)
-{
-    character_getter_thread();
-}*/
