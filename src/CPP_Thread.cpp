@@ -7,7 +7,10 @@ Thread::Thread(void (*body)(void *), void *arg)
     this->myHandle = nullptr;
 }
 
-Thread::~Thread() {}
+Thread::~Thread()
+{
+    // subtly kill
+}
 int Thread::start()
 {
     if (myHandle != nullptr)
@@ -44,7 +47,5 @@ void Thread::run_wrapper(void *ptr)
     if (ptr == nullptr)
         return;
     Thread *pthis = (Thread *)ptr;
-    if (pthis == nullptr)
-        return;
     pthis->run();
 }

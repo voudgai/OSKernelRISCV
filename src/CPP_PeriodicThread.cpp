@@ -1,4 +1,6 @@
 #include "../h/syscall_cpp.hpp"
+/*how do we free its memory-
+we free it by calling thread_kill() which then frees its memory*/
 void PeriodicThread::terminate()
 {
     this->period = 0;
