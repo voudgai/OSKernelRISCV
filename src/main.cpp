@@ -16,9 +16,6 @@ extern void killQEMU();
 extern void userMain();
 extern void mainCopeTest(void *p);
 
-extern void character_putter_thread(void *);
-extern void character_getter_thread(void *);
-
 int main()
 {
     Riscv::w_stvec((uint64)&Riscv::supervisorTrap);
@@ -32,8 +29,8 @@ int main()
     // body for main() must be nullptr !
     thread_create(&main_thread, nullptr, nullptr);
 
-    thread_create(&putc_thread, character_putter_thread, nullptr);
-    thread_create(&getc_thread, character_getter_thread, nullptr);
+    thread_create(&putc_thread, _console::putter_wrapper, nullptr);
+    thread_create(&getc_thread, _console::getter_wrapper, nullptr);
 
     thread_create(&userMain_thread, funcWrapper, nullptr);
     // thread_create(&userMain_thread, mainCopeTest, nullptr);

@@ -5,12 +5,14 @@ class _console
 {
 public:
     static bool isThereAnythingToPrint() { return (headPrint - tailPrint) != 0; }
+    static void putter_wrapper(void *);
+    static void getter_wrapper(void *);
 
 private:
     _console() = delete;
     static void inline init();
-    friend void character_putter_thread(void *);
-    friend void character_getter_thread(void *);
+    static void character_putter_thread(void *);
+    static void character_getter_thread(void *);
     friend class Riscv;
 
     static inline int putCharInBuffer(char ch);

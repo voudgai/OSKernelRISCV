@@ -1,4 +1,5 @@
 #include "../h/_console.hpp"
+
 extern const uint64 CONSOLE_STATUS;  // console status location, if can receive or can transmit do it
 extern const uint64 CONSOLE_TX_DATA; // on this location I store character for printing
 extern const uint64 CONSOLE_RX_DATA; // from this location I read character
@@ -25,7 +26,26 @@ _sem *_console::semPut;
 _sem *_console::semReceive;
 _sem *_console::semGet;*/
 
-void character_putter_thread(void *)
+void _console::putter_wrapper(void *p)
+{
+    static bool putterMade = false;
+    if (!putterMade)
+    {
+        putterMade = true;
+        character_putter_thread(p);
+    }
+}
+
+void _console::getter_wrapper(void *p)
+{
+    static bool getterMade = false;
+    if (!getterMade)
+    {
+        getterMade = true;
+        character_getter_thread(p);
+    }
+}
+void _console::character_putter_thread(void *)
 {
     _console::init();
     while (true)
@@ -58,7 +78,7 @@ void character_putter_thread(void *)
         }
     }
 }
-void character_getter_thread(void *)
+void _console::character_getter_thread(void *)
 {
     _console::init();
     while (true)
