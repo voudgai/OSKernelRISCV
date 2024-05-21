@@ -8,7 +8,7 @@ public:
 
 private:
     _console() = delete;
-    static void init();
+    static void inline init();
     friend void character_putter_thread(void *);
     friend void character_getter_thread(void *);
     friend class Riscv;
@@ -26,10 +26,11 @@ private:
     static uint64 tailGet;
     static char bufferGet[NUM_OF_CHARS];
 
-    static _sem *semTransfer;
+    static _sem *mutexInt;
+    /*static _sem *semTransfer;
     static _sem *semPut;
     static _sem *semReceive;
-    static _sem *semGet;
+    static _sem *semGet;*/
 
     enum TERMINAL_STATUS_CHECKERS
     {
@@ -55,14 +56,14 @@ inline int _console::putCharInBuffer(char ch)
 {
     init();
 
-    semPut->wait();
+    // semPut->wait();
 
     if ((headPrint + 1) % NUM_OF_CHARS == tailPrint)
         return -1;
     _console::bufferPrint[headPrint] = ch;
     headPrint = (headPrint + 1) % NUM_OF_CHARS;
 
-    semTransfer->signal();
+    // semTransfer->signal();
     return 0;
 }
 
@@ -70,14 +71,14 @@ inline char _console::getCharFromBuffer()
 {
     init();
 
-    semGet->wait();
+    // semGet->wait();
 
     if (headGet == tailGet)
         return -1;
     char ch = _console::bufferGet[tailGet];
     tailGet = (tailGet + 1) % NUM_OF_CHARS;
 
-    semReceive->signal();
+    // semReceive->signal();
     return ch;
 }
 
@@ -111,4 +112,28 @@ inline char _console::getCharFromTerminal()
     init();
     char ch = *((char *)consoleReceiveAddr);
     return ch;
+}
+
+inline void _console::init()
+{
+    static bool initialized = false;
+    if (initialized)
+        return;
+
+    consoleStatusAddr = CONSOLE_STATUS;
+    consoleTransferAddr = CONSOLE_TX_DATA;
+    consoleReceiveAddr = CONSOLE_RX_DATA;
+    headPrint = 0;
+    tailPrint = 0;
+
+    headGet = 0;
+    tailGet = 0;
+
+    mutexInt = new _sem(1);
+    /*semTransfer = new _sem(0);
+    semPut = new _sem(NUM_OF_CHARS);
+    semReceive = new _sem(NUM_OF_CHARS);
+    semGet = new _sem(0);*/
+
+    initialized = true;
 }

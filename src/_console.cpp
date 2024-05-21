@@ -18,40 +18,21 @@ uint64 _console::tailGet = 0;
 
 bool _console::consoleInterrupt = false;
 
-_sem *_console::semTransfer;
+_sem *_console::mutexInt;
+
+/*_sem *_console::semTransfer;
 _sem *_console::semPut;
 _sem *_console::semReceive;
-_sem *_console::semGet;
-
-void _console::init()
-{
-    static bool initialized = false;
-    if (initialized)
-        return;
-
-    consoleStatusAddr = CONSOLE_STATUS;
-    consoleTransferAddr = CONSOLE_TX_DATA;
-    consoleReceiveAddr = CONSOLE_RX_DATA;
-    headPrint = 0;
-    tailPrint = 0;
-
-    headGet = 0;
-    tailGet = 0;
-
-    semTransfer = new _sem(0);
-    semPut = new _sem(NUM_OF_CHARS);
-    semReceive = new _sem(NUM_OF_CHARS);
-    semGet = new _sem(0);
-
-    initialized = true;
-}
+_sem *_console::semGet;*/
 
 void character_putter_thread(void *)
 {
     _console::init();
     while (true)
     {
-        sem_wait(_console::semTransfer);
+        while (_console::headPrint == _console::tailPrint)
+            thread_dispatch();
+        // sem_wait(_console::semTransfer);
         if (_console::checkTerminalTransfer() == true && _console::isConsoleInterrupt())
         {
             char ch = _console::bufferPrint[_console::tailPrint];
@@ -59,7 +40,7 @@ void character_putter_thread(void *)
 
             _console::putCharInTerminal(ch);
 
-            sem_signal(_console::semPut);
+            // sem_signal(_console::semPut);
         }
         else
         {
@@ -72,7 +53,7 @@ void character_putter_thread(void *)
                 plic_complete(0xa);
             }
 
-            sem_signal(_console::semTransfer);
+            // sem_signal(_console::semTransfer);
             thread_dispatch();
         }
     }
@@ -82,13 +63,15 @@ void character_getter_thread(void *)
     _console::init();
     while (true)
     {
-        sem_wait(_console::semReceive);
+        while (_console::headGet + 1 == _console::tailPrint)
+            thread_dispatch();
+        // sem_wait(_console::semReceive);
         if (_console::checkTerminalReceive() == true && _console::isConsoleInterrupt())
         {
             _console::bufferGet[_console::headGet] = _console::getCharFromTerminal();
             _console::headGet = (_console::headGet + 1) % _console::NUM_OF_CHARS;
 
-            sem_signal(_console::semGet);
+            // sem_signal(_console::semGet);
         }
         else
         {
@@ -101,7 +84,7 @@ void character_getter_thread(void *)
                 plic_complete(0xa);
             }
 
-            sem_signal(_console::semReceive);
+            // sem_signal(_console::semReceive);
             thread_dispatch();
         }
     }
