@@ -157,8 +157,7 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
         if (intNumber == 0xa)
         {
             _console::setConsoleInterrupt(true);
-            /*char errorText[] = {'C', 'o', 'n', 's', 'o', 'l', 'e', '!','\n', '\0'};
-            Riscv::error_printer(errorText);*/
+            /*char errorText[] = {'C', 'o', 'n', 's', 'o', 'l', 'e', '!','\n', '\0'};*/
         }
     }
     else if (scause == Riscv::ILLEGAL_INSTRUCTION)

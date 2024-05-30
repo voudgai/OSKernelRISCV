@@ -50,32 +50,15 @@ void _console::character_putter_thread(void *)
     _console::init();
     while (true)
     {
-        while (_console::headPrint == _console::tailPrint)
-            thread_dispatch();
-        // sem_wait(_console::semTransfer);
-        if (_console::checkTerminalTransfer() == true && _console::isConsoleInterrupt())
+        while (_console::checkTerminalTransfer() == true &&
+               _console::headPrint != _console::tailPrint)
         {
             char ch = _console::bufferPrint[_console::tailPrint];
             _console::tailPrint = (_console::tailPrint + 1) % _console::NUM_OF_CHARS;
 
             _console::putCharInTerminal(ch);
-
-            // sem_signal(_console::semPut);
         }
-        else
-        {
-            if (_console::checkTerminalReceive() == false &&
-                _console::checkTerminalTransfer() == false &&
-                _console::isConsoleInterrupt() == true)
-            {
-                _console::setConsoleInterrupt(false); // if there was interrupt and the job is done,
-                                                      // there is nothing more to do, reset flag and signal the console
-                plic_complete(0xa);
-            }
-
-            // sem_signal(_console::semTransfer);
-            thread_dispatch();
-        }
+        thread_dispatch();
     }
 }
 void _console::character_getter_thread(void *)
@@ -83,29 +66,21 @@ void _console::character_getter_thread(void *)
     _console::init();
     while (true)
     {
-        while (_console::headGet + 1 == _console::tailPrint)
-            thread_dispatch();
-        // sem_wait(_console::semReceive);
-        if (_console::checkTerminalReceive() == true && _console::isConsoleInterrupt())
+        while (_console::checkTerminalReceive() == true &&
+               _console::isConsoleInterrupt() &&
+               _console::headGet + 1 != _console::tailPrint)
         {
             _console::bufferGet[_console::headGet] = _console::getCharFromTerminal();
             _console::headGet = (_console::headGet + 1) % _console::NUM_OF_CHARS;
-
-            // sem_signal(_console::semGet);
         }
-        else
+
+        if (_console::checkTerminalReceive() == false &&
+            _console::isConsoleInterrupt() == true)
         {
-            if (_console::checkTerminalReceive() == false &&
-                _console::checkTerminalTransfer() == false &&
-                _console::isConsoleInterrupt() == true)
-            {
-                _console::setConsoleInterrupt(false); // if there was interrupt and the job is done,
-                                                      // there is nothing more to do, reset flag and signal the console
-                plic_complete(0xa);
-            }
-
-            // sem_signal(_console::semReceive);
-            thread_dispatch();
+            _console::setConsoleInterrupt(false); // if there was interrupt and the job is done,
+                                                  // there is nothing more to do, reset flag and signal the console
+            plic_complete(0xa);
         }
+        thread_dispatch();
     }
 }
