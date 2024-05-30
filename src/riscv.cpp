@@ -102,7 +102,7 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
         case Riscv::GETC:
             result = _console::getCharFromBuffer();
 
-            while (result < 0 || result > 127)
+            while (result == 255)
             {
                 _thread::putThreadToSleep(4);
                 result = _console::getCharFromBuffer();

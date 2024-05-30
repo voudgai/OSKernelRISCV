@@ -76,7 +76,7 @@ void _sem::unblock()
     }
     old->waitResponse = _thread::REGULARLY_WAITED;
     Scheduler::put(old);
-    _thread::dispatch();
+    //_thread::dispatch();
 }
 
 void _sem::unblockAll_CLOSING()
