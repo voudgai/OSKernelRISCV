@@ -92,7 +92,8 @@ int memoryAllocator::_kmfree(void *toBeFreed)
     // printString("DEALLOCATING "); printInteger((uint64)cur64); printString(" OF SIZE ");printInteger(cur64[1] * MEM_BLOCK_SIZE);printString("\n");
 
     for (; next64 && next64 != cur64; prev64 = next64, next64 = (uint64 *)next64[0])
-        ;
+    {
+    }
 
     if (next64 == nullptr)
         return -1; // nije alocirana memorija prethodno

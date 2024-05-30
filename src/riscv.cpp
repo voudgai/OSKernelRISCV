@@ -116,7 +116,7 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
             _console::putCharInBuffer(c);
             break;
         default:
-            char errorText[] = {'U', 'n', 'k', 'n', 'o', 'w', 'n', ' ', 'E', 'C', 'A', 'L', 'L', ' ', 'T', 'r', 'a', 'p', 'C', 'o', 'd', 'e', '!', '\n', '\0'};
+            char errorText[] = {'\n', 'U', 'n', 'k', 'n', 'o', 'w', 'n', ' ', 'E', 'C', 'A', 'L', 'L', ' ', 'T', 'r', 'a', 'p', 'C', 'o', 'd', 'e', '!', '\n', '\0'};
             Riscv::error_printer(errorText);
             killQEMU();
             volatile int waiter = 1;
@@ -157,12 +157,12 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
         if (intNumber == 0xa)
         {
             _console::setConsoleInterrupt(true);
-            /*char errorText[] = {'C', 'o', 'n', 's', 'o', 'l', 'e', '!','\n', '\0'};*/
+            /*char errorText[] = {'\n', 'C', 'o', 'n', 's', 'o', 'l', 'e', '!','\n', '\0'};*/
         }
     }
     else if (scause == Riscv::ILLEGAL_INSTRUCTION)
     {
-        char errorText[] = {'I', 'l', 'l', 'e', 'g', 'a', 'l', ' ', 'i', 'n', 's', 't', 'r', 'u', 'c', 't', 'i', 'o', 'n', '!', '\n', '\0'};
+        char errorText[] = {'\n', 'I', 'l', 'l', 'e', 'g', 'a', 'l', ' ', 'i', 'n', 's', 't', 'r', 'u', 'c', 't', 'i', 'o', 'n', '!', '\n', '\0'};
         Riscv::error_printer(errorText);
         killQEMU();
         volatile int waiter = 1;
@@ -172,7 +172,7 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
     }
     else if (scause == Riscv::ILLEGAL_RD_ADDR)
     {
-        char errorText[] = {'I', 'l', 'l', 'e', 'g', 'a', 'l', ' ', 'a', 'd', 'd', 'r', 'e', 's', 's', '!', '\n', '\0'};
+        char errorText[] = {'\n', 'I', 'l', 'l', 'e', 'g', 'a', 'l', ' ', 'a', 'd', 'd', 'r', 'e', 's', 's', '!', '\n', '\0'};
         Riscv::error_printer(errorText);
         killQEMU();
         volatile int waiter = 1;
@@ -181,7 +181,7 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
     }
     else
     {
-        char errorText[] = {'U', 'n', 'k', 'n', 'o', 'w', 'n', ' ', 'I', 'N', 'T', 'R', '!', '\n', '\0'};
+        char errorText[] = {'\n', 'U', 'n', 'k', 'n', 'o', 'w', 'n', ' ', 'I', 'N', 'T', 'R', '!', '\n', '\0'};
         Riscv::error_printer(errorText);
         killQEMU();
         volatile int waiter = 1;

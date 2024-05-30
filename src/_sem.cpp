@@ -81,7 +81,7 @@ void _sem::unblock()
 
 void _sem::unblockAll_CLOSING()
 {
-    while (queueTimedBlock.peekFirst() != nullptr)
+    while (numOfTimedWaiting > 0)
     {
         _thread *old = queueBlocked.removeFirst();
         old->waitResponse = _thread::SEM_DELETED;

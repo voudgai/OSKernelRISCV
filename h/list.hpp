@@ -26,7 +26,8 @@ public:
 
     void addFirst(T *data)
     {
-        Elem *elem = (Elem *)memoryAllocator::_kmalloc(sizeof(Elem));
+        size_t numOfBlocks = (memoryAllocator::SIZE_HEADER + sizeof(Elem) + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE;
+        Elem *elem = (Elem *)memoryAllocator::_kmalloc(numOfBlocks);
         elem->data = data;
         elem->next = head;
 
@@ -39,8 +40,8 @@ public:
 
     void addLast(T *data)
     {
-
-        Elem *elem = (Elem *)memoryAllocator::_kmalloc(sizeof(Elem));
+        size_t numOfBlocks = (memoryAllocator::SIZE_HEADER + sizeof(Elem) + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE;
+        Elem *elem = (Elem *)memoryAllocator::_kmalloc(numOfBlocks);
         elem->data = data;
         elem->next = 0;
 

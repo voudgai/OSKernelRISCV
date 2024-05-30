@@ -13,8 +13,7 @@ void funcWrapper(void *);
 // void character_getter_wrapper(void *);
 
 extern void killQEMU();
-extern void userMain();
-extern void mainCopeTest(void *p);
+extern void idleThread(void *p);
 
 int main()
 {
@@ -22,20 +21,18 @@ int main()
     // Riscv::mc_sstatus(Riscv::SSTATUS_SIE); // should i remove this?
 
     _thread *main_thread;
-    _thread *userMain_thread;
     _thread *putc_thread;
     _thread *getc_thread;
+    _thread *idle_thread;
 
     // body for main() must be nullptr !
     thread_create(&main_thread, nullptr, nullptr);
 
     thread_create(&putc_thread, _console::putter_wrapper, nullptr);
     thread_create(&getc_thread, _console::getter_wrapper, nullptr);
+    thread_create(&idle_thread, idleThread, nullptr);
 
-    thread_create(&userMain_thread, funcWrapper, nullptr);
-    // thread_create(&userMain_thread, mainCopeTest, nullptr);
-
-    while (!userMain_thread->isFinished() || _console::isThereAnythingToPrint())
+    while (!idle_thread->isFinished() || _console::isThereAnythingToPrint())
     {
         thread_dispatch();
     }
@@ -45,13 +42,9 @@ int main()
 
     delete putc_thread;
     delete getc_thread;
-    delete userMain_thread;
+    delete idle_thread;
 
     killQEMU();
 
     return 0;
-}
-void funcWrapper(void *)
-{
-    userMain();
 }
