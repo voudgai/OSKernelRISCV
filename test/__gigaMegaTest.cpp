@@ -21,6 +21,7 @@ void wrapProduce(void *v)
         {
             sem_close(mutex);
             mutex = nullptr;
+            printString("OBRISAO MUTEXA\n");
             break;
         }
     }
@@ -59,12 +60,20 @@ void wrapWait(void *v)
         int x = sem_wait(mutex);
         if (x == 0)
         {
-            printString("izbacen sa strane semafora\n");
+            printString("izbacen sa strane semafora za uspeh\n");
         }
         else if (x == -1)
         {
-            printString("izbacen zbog mrtvog semafora\n");
+            printString("izbacen zbog mrtvog semafora za uspeh\n");
         }
+        else
+        {
+            printString("izbacen zbog NAJJACEG semafora za uspeh\n");
+        }
+    }
+    else
+    {
+        printString("NIJE IZBACEN NAJJACI za uspeh\n");
     }
 
     time_sleep(100);

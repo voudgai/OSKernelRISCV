@@ -12,8 +12,7 @@ void _sem::wait()
     --this->val;
     if (this->val >= 0)
         return;
-    else
-        block();
+    block();
     return;
 }
 
@@ -76,7 +75,7 @@ void _sem::unblock()
     }
     old->waitResponse = _thread::REGULARLY_WAITED;
     Scheduler::put(old);
-    //_thread::dispatch();
+    _thread::dispatch(); // this can be harmful on the test
 }
 
 void _sem::unblockAll_CLOSING()
