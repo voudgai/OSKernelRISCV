@@ -115,8 +115,32 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
             __asm__ volatile("ld %[chr], 11 * 8(fp)" : [chr] "=r"(c));
             _console::putCharInBuffer(c);
             break;
+        case Riscv::GET_THREAD_ID:
+            result = _thread::running->myID;
+            __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+            break;
+        case Riscv::JOIN_ALL:
+            uint64 maxTimeWaiting;
+            __asm__ volatile("ld %[time], 11 * 8(fp)" : [time] "=r"(maxTimeWaiting));
+            result = _thread ::running->joinAll(maxTimeWaiting);
+            __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+            break;
+        case Riscv::SET_MAXIMUM_THREADS:
+            // uint64 maxNumThreads, maxTimeThr, intervalTime;
+            // int result;
+
+            // // ucitati sacuvane registre iz memorije jer menja vrednosti a4
+            // __asm__ volatile("ld %[maxNum], 11 * 8(fp)" : [maxNum] "=r"(maxNumThreads));
+            // __asm__ volatile("ld %[maxTime], 12 * 8(fp)" : [maxTime] "=r"(maxTimeThr));
+            // __asm__ volatile("ld %[interval], 13 * 8(fp)" : [interval] "=r"(intervalTime));
+
+            // result = _thread::setMaximumNumOfThreads(maxNumThreads, maxTimeThr, intervalTime);
+
+            // __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+            // break;
         default:
-            char errorText[] = {'\n', 'U', 'n', 'k', 'n', 'o', 'w', 'n', ' ', 'E', 'C', 'A', 'L', 'L', ' ', 'T', 'r', 'a', 'p', 'C', 'o', 'd', 'e', '!', '\n', '\0'};
+            // char errorText[] = {'\n', 'U', 'n', 'k', 'n', 'o', 'w', 'n', ' ', 'E', 'C', 'A', 'L', 'L', ' ', 'T', 'r', 'a', 'p', 'C', 'o', 'd', 'e', '!', '\n', '\0'};
+            char errorText[] = "Unknown ECALL TrapCode!\n\0";
             Riscv::error_printer(errorText);
             killQEMU();
             volatile int waiter = 1;
@@ -162,7 +186,8 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
     }
     else if (scause == Riscv::ILLEGAL_INSTRUCTION)
     {
-        char errorText[] = {'\n', 'I', 'l', 'l', 'e', 'g', 'a', 'l', ' ', 'i', 'n', 's', 't', 'r', 'u', 'c', 't', 'i', 'o', 'n', '!', '\n', '\0'};
+        // char errorText[] = {'\n', 'I', 'l', 'l', 'e', 'g', 'a', 'l', ' ', 'i', 'n', 's', 't', 'r', 'u', 'c', 't', 'i', 'o', 'n', '!', '\n', '\0'};
+        char errorText[] = "Illegal instruction!\n\0";
         Riscv::error_printer(errorText);
         killQEMU();
         volatile int waiter = 1;
@@ -172,7 +197,18 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
     }
     else if (scause == Riscv::ILLEGAL_RD_ADDR)
     {
-        char errorText[] = {'\n', 'I', 'l', 'l', 'e', 'g', 'a', 'l', ' ', 'a', 'd', 'd', 'r', 'e', 's', 's', '!', '\n', '\0'};
+        // char errorText[] = {'\n', 'I', 'l', 'l', 'e', 'g', 'a', 'l', ' ', 'a', 'd', 'd', 'r', 'e', 's', 's', '!', '\n', '\0'};
+        char errorText[] = "Illegal address for reading!\n\0";
+        Riscv::error_printer(errorText);
+        killQEMU();
+        volatile int waiter = 1;
+        while (waiter)
+            ;
+    }
+    else if (scause == Riscv::ILLEGAL_WR_ADDR)
+    {
+        // char errorText[] = {'\n', 'I', 'l', 'l', 'e', 'g', 'a', 'l', ' ', 'a', 'd', 'd', 'r', 'e', 's', 's', '!', '\n', '\0'};
+        char errorText[] = "Illegal address for writing!\n\0";
         Riscv::error_printer(errorText);
         killQEMU();
         volatile int waiter = 1;
@@ -181,7 +217,8 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
     }
     else
     {
-        char errorText[] = {'\n', 'U', 'n', 'k', 'n', 'o', 'w', 'n', ' ', 'I', 'N', 'T', 'R', '!', '\n', '\0'};
+        // char errorText[] = {'\n', 'U', 'n', 'k', 'n', 'o', 'w', 'n', ' ', 'I', 'N', 'T', 'R', '!', '\n', '\0'};
+        char errorText[] = "Unknown interrupt!\n\0";
         Riscv::error_printer(errorText);
         killQEMU();
         volatile int waiter = 1;
@@ -282,7 +319,9 @@ inline void sem_signal_wrapper()
 
     if (handle == nullptr)
         return;
-    handle->signal();
+    result = handle->signal(); // 1 if signaled any thread, 0 if didnt
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+    return;
 }
 
 inline void sem_timedwait_wrapper()

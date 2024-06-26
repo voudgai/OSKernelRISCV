@@ -29,8 +29,6 @@ public:
     void operator delete(void *p) noexcept { memoryAllocator::_kmfree(p); }
     void operator delete[](void *p) noexcept { memoryAllocator::_kmfree(p); }
 
-    void printThread();
-
     friend class Riscv;
     friend class _sem;
 
@@ -40,6 +38,7 @@ public:
     void setFinished(bool value) { finished = value; }
 
     bool isSleeping() const { return sleeping; }
+    bool isJoined() const { return joinedChildrenWAITING; }
 
     semResponses getWaitingStatus() const { return waitResponse; }
     void setWaitingStatus(semResponses response) { waitResponse = response; }
@@ -52,7 +51,11 @@ public:
 
     static _thread *running;
 
+    // some modifications
     static int subtleKill(_thread *threadToBeKilled);
+    int joinAll(uint64 sleepingAtMost);
+    static void postponedThreadsActivatorThread(void *ptr);
+    static int setMaximumThreads(uint64 num_of_threads, uint64 max_time, uint64 interval_time);
 
 private:
     _thread(Body body, void *arg, uint64 *stack_space) : body(body),
@@ -62,17 +65,21 @@ private:
                                                                   stack != nullptr ? (uint64)stack_space : 0}),
                                                          timeSlice(TIME_SLICE),
                                                          finished(false),
-                                                         parentThread(running),
-                                                         sleeping(false)
+                                                         parentThread(running)
     {
         if (body != nullptr)
         {
             Scheduler::put(this);
         }
+        if (parentThread != nullptr)
+        {
+            parentThread->numOfChildren++;
+        }
         if (_thread::running == nullptr && body == nullptr)
         {
             _thread::running = this;
         }
+        myID = ID++;
     }
 
     struct Context
@@ -88,12 +95,16 @@ private:
     uint64 timeSlice;
     bool finished;
     _thread *parentThread;
+    uint64 myID;
+
+    uint64 numOfChildren = 0;
+    bool joinedChildrenWAITING = false;
 
     semResponses waitResponse = NON_WAITING;
     uint64 timedWait_semTimeRelease = 0; // for timedWait(), latest time semaphore must release this thread,
                                          // this value doesnt mean much now, but only when timedwait is called
 
-    bool sleeping; // for thread_sleep
+    bool sleeping = false; // for thread_sleep
     uint64 timeForWakingUp = 0;
 
     static void putThreadToSleep(uint64 timeAsleep);
@@ -113,6 +124,13 @@ private:
 
     static uint64 constexpr STACK_SIZE = DEFAULT_STACK_SIZE / sizeof(uint64);
     static uint64 constexpr TIME_SLICE = DEFAULT_TIME_SLICE;
+
+    static uint64 ID;
+
+    static uint64 activeThreadsCounter;
+    static uint64 maxThreadsCounter;
+    static _sem *semThreadsCounter;
+    static List<_thread> listNotStartedThreads; // threads which are made after reaching maxThreadsCounter
 };
 
 #endif // OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_TCB_HPP

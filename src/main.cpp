@@ -18,7 +18,6 @@ extern void idleThread(void *p);
 int main()
 {
     Riscv::w_stvec((uint64)&Riscv::supervisorTrap);
-    // Riscv::mc_sstatus(Riscv::SSTATUS_SIE); // should i remove this?
 
     _thread *main_thread;
     _thread *putc_thread;
@@ -32,19 +31,18 @@ int main()
     thread_create(&getc_thread, _console::getter_wrapper, nullptr);
     thread_create(&idle_thread, idleThread, nullptr);
 
+    //_thread::setMaximumThreads(5 + 3, 50, 10); // avg2023
+
     while (!idle_thread->isFinished() || _console::isThereAnythingToPrint())
     {
         thread_dispatch();
     }
+
     _thread::subtleKill(putc_thread);
     _thread::subtleKill(getc_thread);
+
     thread_dispatch();
 
-    delete putc_thread;
-    delete getc_thread;
-    delete idle_thread;
-
     killQEMU();
-
     return 0;
 }

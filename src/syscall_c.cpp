@@ -254,3 +254,45 @@ void putc(char c)
 
     return;
 }
+
+// DODATNO
+int get_thread_ID()
+{
+    static const int volatile trapCode = 0x51;
+
+    __asm__ volatile("mv a0, %[trapCode]" : : [trapCode] "r"(trapCode));
+    __asm__ volatile("ecall");
+
+    int result;
+    __asm__ volatile("mv %0, a0" : "=r"(result));
+    return result;
+}
+
+int join_all(uint64 maxTimeWaiting)
+{
+    static const int volatile trapCode = 0x52;
+
+    __asm__ volatile("mv a1, %[time]" : : [time] "r"(maxTimeWaiting));
+    __asm__ volatile("mv a0, %[trapCode]" : : [trapCode] "r"(trapCode));
+    __asm__ volatile("ecall");
+
+    int result;
+    __asm__ volatile("mv %0, a0" : "=r"(result));
+    return result;
+}
+int set_maximum_threads(int num_of_threads, int max_time, int interval_time)
+{
+    static const int volatile trapCode = 0x53;
+
+    __asm__ volatile("mv a3, %[interval]" : : [interval] "r"(interval_time));
+    __asm__ volatile("mv a2, %[maxTime]" : : [maxTime] "r"(max_time));
+    __asm__ volatile("mv a1, %[numThr]" : : [numThr] "r"(num_of_threads));
+    __asm__ volatile("mv a0, %[trapCode]" : : [trapCode] "r"(trapCode));
+
+    __asm__ volatile("ecall");
+
+    int volatile result;
+    __asm__ volatile("mv %0, a0" : "=r"(result));
+
+    return result;
+}

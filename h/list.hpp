@@ -120,7 +120,7 @@ public:
     int removeSpec(T *ptr)
     {
         if (ptr == nullptr)
-            return 0;
+            return -1;
         Elem *cur = head, *prev = nullptr;
         while (cur != nullptr)
         {

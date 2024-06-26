@@ -108,6 +108,10 @@ public:
 
         GETC = 0x41,
         PUTC = 0x42,
+
+        GET_THREAD_ID = 0x51,
+        JOIN_ALL = 0x52,
+        SET_MAXIMUM_THREADS = 0x53
     };
     // supervisor trap
     static void supervisorTrap();
@@ -215,26 +219,24 @@ inline void Riscv::w_sstatus(uint64 sstatus)
     __asm__ volatile("csrw sstatus, %[sstatus]" : : [sstatus] "r"(sstatus));
 }
 
-inline void Riscv::error_printer(char s[])
+inline void Riscv::error_printer(char *s)
 {
     while (*s != '\0')
     {
         if (_console::checkTerminalTransfer() == true /*&& _console::isConsoleInterrupt()*/)
         {
-            char ch = *s;
+            _console::putCharInTerminal(*s);
             s++;
-            _console::putCharInTerminal(ch);
         }
     }
-    char end[] = {'F', 'A', 'T', 'A', 'L', '!', '\n', '\0'};
-    int i = 0;
-    while (i <= 6)
+    char end1[] = "Kernel finished ugly!\n\0";
+    char *end = end1;
+    while (*end != '\0')
     {
         if (_console::checkTerminalTransfer() == true /*&& _console::isConsoleInterrupt()*/)
         {
-            char ch = end[i];
-            i++;
-            _console::putCharInTerminal(ch);
+            _console::putCharInTerminal(*end);
+            end++;
         }
     }
     plic_complete(0xa);

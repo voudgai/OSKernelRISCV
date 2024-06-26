@@ -34,7 +34,7 @@ public:
     void wait();
     void timedWait(uint64 timeForRelease); // ovaj timeForRelease ce biti systime + koliko ceka maksimalno
     int tryWait();
-    void signal();
+    int signal();
 
     uint64 value() const { return val; }
 

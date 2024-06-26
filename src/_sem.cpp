@@ -20,18 +20,17 @@ void _sem::timedWait(uint64 timeForRelease)
 {
     if (--this->val >= 0)
         return;
-    // lock();
     timedBlock(timeForRelease);
-    // unlock();
 }
 
-void _sem::signal()
+int _sem::signal()
 {
     ++this->val;
     if (this->val > 0)
-        return;
+        return 0;
     // lock();
     unblock();
+    return 1;
 }
 
 void _sem::block()
@@ -75,7 +74,7 @@ void _sem::unblock()
     }
     old->waitResponse = _thread::REGULARLY_WAITED;
     Scheduler::put(old);
-    _thread::dispatch(); // this can be harmful on the test
+    //_thread::dispatch(); // this can be harmful on the test
 }
 
 void _sem::unblockAll_CLOSING()
@@ -87,12 +86,14 @@ void _sem::unblockAll_CLOSING()
         old->timedWait_semTimeRelease = 0;
         Scheduler::put(old);
         numOfTimedWaiting--;
+        val++;
     }
     while (queueBlocked.peekFirst() != nullptr)
     {
         _thread *old = queueBlocked.removeFirst();
         old->waitResponse = _thread::SEM_DELETED;
         Scheduler::put(old);
+        val++;
     }
 }
 
@@ -109,6 +110,7 @@ void _sem::unblockTimesUp()
             old->timedWait_semTimeRelease = 0;
             Scheduler::put(old);
             numOfTimedWaiting--;
+            val++;
         }
         else
         {
@@ -125,8 +127,7 @@ int _sem::tryWait()
         WOULD_NOT_WAIT = 1
     };
 
-    this->val--;
-    if (val < 0)
+    if (this->val - 1 < 0)
         return WOULD_WAIT;
     else
         return WOULD_NOT_WAIT;
