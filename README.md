@@ -30,13 +30,20 @@ This project involves the development of a functional operating system kernel su
 
 2. **Building the Project:**
    ```bash
+   make clean
    make all
    ```
 
-3. **Running the Project:**
+3. **Emulating the Project:**
    ```bash
-   make run
+   make qemu
    ```
+
+4. **Debugging the Project:**
+   ```bash
+   make qemu-gdb
+   ```
+   And then run Remote debugger as explained in main.c (its explained for usage in clion)
 
 ## Usage
 
