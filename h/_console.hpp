@@ -29,7 +29,7 @@ private:
     static uint64 tailGet;
     static char bufferGet[NUM_OF_CHARS];
 
-    static _sem *mutexInt;
+    static _sem *characterReadyToGet;
     /*static _sem *semTransfer;
     static _sem *semPut;
     static _sem *semReceive;
@@ -59,14 +59,11 @@ inline int _console::putCharInBuffer(char ch)
 {
     init();
 
-    // semPut->wait();
-
     if ((headPrint + 1) % NUM_OF_CHARS == tailPrint)
         return -1;
     _console::bufferPrint[headPrint] = ch;
     headPrint = (headPrint + 1) % NUM_OF_CHARS;
 
-    // semTransfer->signal();
     return 0;
 }
 
@@ -74,14 +71,13 @@ inline char _console::getCharFromBuffer()
 {
     init();
 
-    // semGet->wait();
+    characterReadyToGet->wait();
 
     if (headGet == tailGet)
         return -1;
     char ch = _console::bufferGet[tailGet];
     tailGet = (tailGet + 1) % NUM_OF_CHARS;
 
-    // semReceive->signal();
     return ch;
 }
 
@@ -132,9 +128,10 @@ inline void _console::init()
     headGet = 0;
     tailGet = 0;
 
-    mutexInt = new _sem(1);
-    /*semTransfer = new _sem(0);
-    semPut = new _sem(NUM_OF_CHARS);
+    characterReadyToGet = new _sem(0);
+
+    // mutexInt = new _sem(1);
+    /*semPut = new _sem(NUM_OF_CHARS);
     semReceive = new _sem(NUM_OF_CHARS);
     semGet = new _sem(0);*/
 

@@ -19,10 +19,11 @@ uint64 _console::tailGet = 0;
 
 bool _console::consoleInterrupt = false;
 
-_sem *_console::mutexInt;
+//_sem *_console::mutexInt;
 
-/*_sem *_console::semTransfer;
-_sem *_console::semPut;
+_sem *_console::characterReadyToGet;
+
+/*_sem *_console::semPut;
 _sem *_console::semReceive;
 _sem *_console::semGet;*/
 
@@ -47,52 +48,64 @@ void _console::getter_wrapper(void *p)
 }
 void _console::PRINT_CONSOLE_IN_EMERGENCY()
 {
-    while (_console::headPrint != _console::tailPrint)
+    while (headPrint != tailPrint)
     {
-        if (_console::checkTerminalTransfer() == true)
+        if (checkTerminalTransfer() == true)
         {
-            char ch = _console::bufferPrint[_console::tailPrint];
-            _console::tailPrint = (_console::tailPrint + 1) % _console::NUM_OF_CHARS;
+            char ch = bufferPrint[tailPrint];
+            tailPrint = (tailPrint + 1) % NUM_OF_CHARS;
 
-            _console::putCharInTerminal(ch);
+            putCharInTerminal(ch);
         }
     }
     plic_complete(0xa);
 }
 void _console::character_putter_thread(void *)
 {
-    _console::init();
+    init();
     while (true)
     {
-        while (_console::checkTerminalTransfer() == true &&
-               _console::headPrint != _console::tailPrint)
+        while (checkTerminalTransfer() == true &&
+               headPrint != tailPrint)
         {
-            char ch = _console::bufferPrint[_console::tailPrint];
-            _console::tailPrint = (_console::tailPrint + 1) % _console::NUM_OF_CHARS;
+            char ch = bufferPrint[tailPrint];
+            tailPrint = (tailPrint + 1) % NUM_OF_CHARS;
 
-            _console::putCharInTerminal(ch);
+            putCharInTerminal(ch);
+        }
+
+        if (checkTerminalReceive() == false &&
+            checkTerminalTransfer() == false &&
+            isConsoleInterrupt())
+        {
+            setConsoleInterrupt(false); // if there was interrupt and the job is done,
+                                        // there is nothing more to do, reset flag and signal the console
+            plic_complete(0xa);
         }
         thread_dispatch();
     }
 }
 void _console::character_getter_thread(void *)
 {
-    _console::init();
+    init();
     while (true)
     {
-        while (_console::checkTerminalReceive() == true &&
-               _console::isConsoleInterrupt() &&
-               _console::headGet + 1 != _console::tailPrint)
+        while (checkTerminalReceive() == true &&
+               isConsoleInterrupt() &&
+               headGet + 1 != tailGet)
         {
-            _console::bufferGet[_console::headGet] = _console::getCharFromTerminal();
-            _console::headGet = (_console::headGet + 1) % _console::NUM_OF_CHARS;
+            bufferGet[headGet] = getCharFromTerminal();
+            headGet = (headGet + 1) % NUM_OF_CHARS;
+
+            sem_signal(characterReadyToGet);
         }
 
-        if (_console::checkTerminalReceive() == false &&
-            _console::isConsoleInterrupt() == true)
+        if (checkTerminalReceive() == false &&
+            checkTerminalTransfer() == false &&
+            isConsoleInterrupt())
         {
-            _console::setConsoleInterrupt(false); // if there was interrupt and the job is done,
-                                                  // there is nothing more to do, reset flag and signal the console
+            setConsoleInterrupt(false); // if there was interrupt and the job is done,
+                                        // there is nothing more to do, reset flag and signal the console
             plic_complete(0xa);
         }
         thread_dispatch();

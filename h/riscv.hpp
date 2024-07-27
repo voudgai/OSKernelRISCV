@@ -478,12 +478,6 @@ inline void Riscv::getc_wrapper()
 {
     int volatile result = _console::getCharFromBuffer();
 
-    while (result == 255)
-    {
-        _thread::putThreadToSleep(4);
-        result = _console::getCharFromBuffer();
-    }
-
     __asm__ volatile("sb %[result], 10 * 8(fp)" : : [result] "r"(result));
 }
 
