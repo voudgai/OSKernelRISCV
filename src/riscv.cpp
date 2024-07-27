@@ -89,6 +89,7 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
     else if (scause == Riscv::TIMER)
     {
         Riscv::mc_sip(Riscv::SIP_SSIP);
+
         Riscv::incSysTime();
         _thread::incTimeSliceCounter();
 
