@@ -7,6 +7,7 @@ public:
     static bool isThereAnythingToPrint() { return (headPrint - tailPrint) != 0; }
     static void putter_wrapper(void *);
     static void getter_wrapper(void *);
+    static void PRINT_CONSOLE_IN_EMERGENCY();
 
 private:
     _console() = delete;

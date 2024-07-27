@@ -45,6 +45,20 @@ void _console::getter_wrapper(void *p)
         character_getter_thread(p);
     }
 }
+void _console::PRINT_CONSOLE_IN_EMERGENCY()
+{
+    while (_console::headPrint != _console::tailPrint)
+    {
+        if (_console::checkTerminalTransfer() == true)
+        {
+            char ch = _console::bufferPrint[_console::tailPrint];
+            _console::tailPrint = (_console::tailPrint + 1) % _console::NUM_OF_CHARS;
+
+            _console::putCharInTerminal(ch);
+        }
+    }
+    plic_complete(0xa);
+}
 void _console::character_putter_thread(void *)
 {
     _console::init();

@@ -6,15 +6,22 @@
 #include "../h/memoryAllocator.hpp"
 #include "../h/syscall_c.h"
 #include "../h/_thread.hpp"
-#include "../h/killQEMU.hpp"
 
 void funcWrapper(void *);
 // void character_putter_wrapper(void *);
 // void character_getter_wrapper(void *);
 
-extern void killQEMU();
 extern void idleThread(void *p);
-
+/*
+ * POKRETANJE DEBUGERA:
+ * gore desno naci prozorcic levo od zelenog play buttona, otvoriti padajuci meni i izabrati edit configurations.
+ * otici na plusic u gornjem levom uglu.
+ * izabrati remote debug i kada se otvori preimenovati ga slobodno.
+ * za debuger izabrate /bin/gdb-multiarch
+ * za target remote args staviti localhost:26000
+ * za symbol file izabrati kernel fajl
+ * za project root izabrati project file
+ * */
 int main()
 {
     Riscv::w_stvec((uint64)&Riscv::supervisorTrap);
@@ -43,6 +50,6 @@ int main()
 
     thread_dispatch();
 
-    killQEMU();
+    Riscv::killQEMU();
     return 0;
 }

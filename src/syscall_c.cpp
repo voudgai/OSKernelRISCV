@@ -2,7 +2,9 @@
 #include "../h/syscall_c.h"
 #include "../h/memoryAllocator.hpp"
 #include "../h/_thread.hpp"
+#include "../h/_sem.hpp"
 #include "../lib/console.h"
+static constexpr int HANDLE_NULL = -3;
 
 void *mem_alloc(size_t size)
 {
@@ -97,16 +99,6 @@ int sem_open(sem_t *handle, unsigned init)
     return result;
 }
 
-enum semErrorType
-{
-    SEMOKAY = 0,
-    SEMDEAD = -1,
-    SEMTIMEOUT = -2,
-    HANDLE_NULL = -3,
-    SEMUNEXPECTED = -4,
-    SEMERROR = -5
-};
-
 int sem_close(sem_t handle)
 {
     if (handle == nullptr)
@@ -138,20 +130,8 @@ int sem_wait(sem_t id)
 
     int volatile result;
     __asm__ volatile("mv %0, a0" : "=r"(result));
-    if (result < 0)
-        return result;
 
-    _thread::semResponses response = _thread::running->getWaitingStatus();
-    _thread::running->setWaitingStatus(_thread::NON_WAITING);
-
-    if (response == _thread::WAITING)
-        return SEMERROR; // how did it come here if she still waits
-    if (response == _thread::SEM_DELETED)
-        return SEMDEAD;
-    if (response == _thread::REGULARLY_WAITED || response == _thread::NON_WAITING)
-        return SEMOKAY;
-
-    return SEMUNEXPECTED; // should never happen
+    return result;
 }
 
 int sem_signal(sem_t id)
@@ -184,22 +164,7 @@ int sem_timedwait(sem_t id, time_t timeout)
 
     int volatile result;
     __asm__ volatile("mv %0, a0" : "=r"(result));
-    if (result < 0)
-        return result;
-
-    _thread::semResponses response = _thread::running->getWaitingStatus();
-    _thread::running->setWaitingStatus(_thread::NON_WAITING);
-
-    if (response == _thread::WAITING || response == _thread::TIMEDWAITING)
-        return SEMERROR; // how did it come here if she still waits
-    if (response == _thread::SEM_DELETED)
-        return SEMDEAD;
-    if (response == _thread::TIMEOUT)
-        return SEMTIMEOUT;
-    if (response == _thread::REGULARLY_WAITED || response == _thread::NON_WAITING)
-        return SEMOKAY;
-
-    return SEMUNEXPECTED; // should never happen
+    return result;
 }
 
 int sem_trywait(sem_t id)
@@ -265,34 +230,5 @@ int get_thread_ID()
 
     int result;
     __asm__ volatile("mv %0, a0" : "=r"(result));
-    return result;
-}
-
-int join_all(uint64 maxTimeWaiting)
-{
-    static const int volatile trapCode = 0x52;
-
-    __asm__ volatile("mv a1, %[time]" : : [time] "r"(maxTimeWaiting));
-    __asm__ volatile("mv a0, %[trapCode]" : : [trapCode] "r"(trapCode));
-    __asm__ volatile("ecall");
-
-    int result;
-    __asm__ volatile("mv %0, a0" : "=r"(result));
-    return result;
-}
-int set_maximum_threads(int num_of_threads, int max_time, int interval_time)
-{
-    static const int volatile trapCode = 0x53;
-
-    __asm__ volatile("mv a3, %[interval]" : : [interval] "r"(interval_time));
-    __asm__ volatile("mv a2, %[maxTime]" : : [maxTime] "r"(max_time));
-    __asm__ volatile("mv a1, %[numThr]" : : [numThr] "r"(num_of_threads));
-    __asm__ volatile("mv a0, %[trapCode]" : : [trapCode] "r"(trapCode));
-
-    __asm__ volatile("ecall");
-
-    int volatile result;
-    __asm__ volatile("mv %0, a0" : "=r"(result));
-
     return result;
 }

@@ -3,6 +3,7 @@
 extern void mainCopeTest(void *p);
 void funcWrapper(void *);
 extern void userMain();
+
 extern void mainCopeTest(void *p);
 extern int modifikacijaPredrok();
 extern int modifikacijaJun();
@@ -22,10 +23,11 @@ void idleThread(void *ptr)
 }
 void funcWrapper(void *ptr)
 {
+    //::mainCopeTest(ptr);
+    // ::modifikacijaPredrok();
     //::modifikacijaAvg2023();
-    //::modifikacijaJun();
-    //::modifikacijaPredrok();
+    // ::modifikacijaJun();
     ::userMain();
-    // mainCopeTest(ptr);
+
     finished = true;
 }

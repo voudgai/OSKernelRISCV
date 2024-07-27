@@ -13,6 +13,7 @@ class _sem
 {
 public:
     friend class Riscv;
+    friend class _thread;
     void *operator new(size_t n) { return memoryAllocator::_kmalloc((memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
     void *operator new[](size_t n) { return memoryAllocator::_kmalloc((memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
 
@@ -31,29 +32,43 @@ public:
         allSemaphores.removeSpec(this);
         numOfAllSemaphores--;
     }
-    void wait();
-    void timedWait(uint64 timeForRelease); // ovaj timeForRelease ce biti systime + koliko ceka maksimalno
-    int tryWait();
-    int signal();
+    int wait();                           // blocks running thread if val is negative after decreasing
+    int timedWait(uint64 timeForRelease); // ovaj timeForRelease ce biti systime + koliko ceka maksimalno
+    int tryWait();                        // decreases val and checks if it would wait
+    int signal();                         // deblocks one thread if val is zero or negative after increasing
 
     uint64 value() const { return val; }
 
+    enum semWaitAnswers // possible answers for ALL wait functions
+    {
+        SEMDIDNTWAIT = 1,
+        SEMOKAY = 0,
+        SEMDEAD = -1,
+        SEMTIMEOUT = -2,
+        HANDLE_NULL = -3,
+        SEMUNEXPECTED = -4,
+        SEMERROR = -5,
+    };
+
 protected:
-    void block();
-    void timedBlock(uint64 timeSleepingAtMost);
-    void unblock();
-    void unblockAll_CLOSING();
-    void unblockTimesUp();
+    void block();                                                                    // blocks a thread which is regularly waiting
+    void timedBlock(uint64 timeSleepingAtMost);                                      // blocks a thread which is time_waiting
+    void unblock(_thread::semResponses unblockingCause = _thread::REGULARLY_WAITED); // unblocks a thread from either one of the waits, and sets response
+    void unblockedByTime(_thread *old);                                              // called from _thread when there is thread to be woken up which is timed_blocked
+    void unblockAll_CLOSING();                                                       // unblocks all threads waiting here
+    // void unblockTimesUp();
+
+    int generateWAITResponses(_thread::semResponses response); // depending on threads state when returning from block,
+                                                               // generates return values for wait functions
 
 private:
     long int val;
-    List<_thread> queueBlocked;
+    List<_thread> queueBlocked; // queue of ALL blocked threads
 
-    uint64 numOfTimedWaiting = 0;
-    List<_thread> queueTimedBlock;
+    uint64 numOfTimedWaiting = 0; // just for statistics
 
-    static List<_sem> allSemaphores;
-    static uint64 numOfAllSemaphores;
+    static List<_sem> allSemaphores;  // UNUSED
+    static uint64 numOfAllSemaphores; // UNUSED
 };
 
 #endif // PROJECT_FOR_REAL__SEM_HPP

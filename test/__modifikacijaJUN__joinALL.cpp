@@ -1,7 +1,7 @@
 #include "../h/syscall_cpp.hpp"
 #include "../h/_console.hpp"
 #include "../test/printing.hpp"
-
+/*
 static Semaphore *waitForAll;
 
 class testThreadJUN : public Thread
@@ -28,42 +28,42 @@ public:
         waitForAll->signal();
     }
 };
-
+*/
 int modifikacijaJun()
-{
-    waitForAll = new Semaphore(0);
+{ /*
+     waitForAll = new Semaphore(0);
 
-    Thread *threads[20];
+     Thread *threads[20];
 
-    for (int i = 0; i < 20; i++)
-    {
-        threads[i] = new testThreadJUN();
-    }
-    for (int i = 0; i < 20; i++)
-    {
-        threads[i]->start();
-        if (i == 9)
-        {
-            thread_dispatch();
-            int time = 10;
-            printString("Joining first ");
-            printInt(i + 1);
-            printString(" threads or ");
-            printInt(time);
-            printString("/10 sec...\n");
+     for (int i = 0; i < 20; i++)
+     {
+         threads[i] = new testThreadJUN();
+     }
+     for (int i = 0; i < 20; i++)
+     {
+         threads[i]->start();
+         if (i == 9)
+         {
+             thread_dispatch();
+             int time = 10;
+             printString("Joining first ");
+             printInt(i + 1);
+             printString(" threads or ");
+             printInt(time);
+             printString("/10 sec...\n");
 
-            int childWokeMeUp = join_all(time);
+             int childWokeMeUp = join_all(time);
 
-            printString("Returned from join because ");
-            if (childWokeMeUp)
-                printString("children are finished!\n");
-            else
-                printString("time exceeded!\n");
-        }
-    }
-    for (int i = 0; i < 20; i++)
-    {
-        waitForAll->wait();
-    }
+             printString("Returned from join because ");
+             if (childWokeMeUp)
+                 printString("children are finished!\n");
+             else
+                 printString("time exceeded!\n");
+         }
+     }
+     for (int i = 0; i < 20; i++)
+     {
+         waitForAll->wait();
+     }*/
     return 0;
 }

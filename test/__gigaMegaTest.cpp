@@ -33,7 +33,9 @@ void wrapConsumer(void *v)
 
     if (mutex)
     {
-        int x = sem_timedwait(mutex, 150);
+        int x = sem_timedwait(mutex, 64);
+        printInt(consumer);
+        printString(" - ");
         if (x == 0)
         {
             printString("izbacen sa strane semafora\n");
@@ -48,38 +50,52 @@ void wrapConsumer(void *v)
         }
     }
     consumer++;
+    printString("Gotov timed wait!\n");
 }
 
 void wrapWait(void *v)
 {
-    time_sleep(200);
+    time_sleep(90);
     printString("uspehSleep1\n");
 
     if (mutex)
     {
         int x = sem_wait(mutex);
+
+        printInt(consumer);
+        printString(" - ");
         if (x == 0)
         {
-            printString("izbacen sa strane semafora za uspeh\n");
+            printString("izbacen sa strane semafora, za uspeh2\n");
         }
         else if (x == -1)
         {
-            printString("izbacen zbog mrtvog semafora za uspeh\n");
+            printString("izbacen zbog mrtvog semafora, za uspeh2\n");
         }
         else
         {
-            printString("izbacen zbog NAJJACEG semafora za uspeh\n");
+            printString("izbacen iz nepoznatog razloga, za uspeh2\n");
         }
     }
     else
     {
-        printString("NIJE IZBACEN NAJJACI za uspeh\n");
+
+        printInt(consumer);
+        printString(" - ");
+        printString("Nije cekao, mutex je mrtav, za uspeh2.\n");
     }
 
     time_sleep(100);
+
+    printInt(consumer);
+    printString(" - ");
     printString("uspehSleep2\n");
 
     consumer++;
+
+    printInt(consumer);
+    printString(" - ");
+    printString("Gotov wait!\n");
 }
 
 void waitTest()

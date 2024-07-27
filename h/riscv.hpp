@@ -116,6 +116,8 @@ public:
     // supervisor trap
     static void supervisorTrap();
 
+    static void killQEMU();
+
 private:
     static uint64 SYS_TIME;
     static inline void incSysTime(uint64 i = 1) { SYS_TIME += i; }
@@ -124,7 +126,27 @@ private:
     static void handleSupervisorTrap();
 
     // error printer in S mode
-    inline static void error_printer(char s[]);
+    inline static void error_printer(const char *s);
+    inline static void error_printInt(int xx, int base = 10, int sgn = 0);
+    inline static void error_print_stack_trace(uint depth);
+    static constexpr uint STACK_TRACE_DEPTH = 1;
+
+    static inline void mem_alloc_wrapper();
+    static inline void mem_free_wrapper();
+    static inline void thread_create_wrapper();
+    static inline void thread_exit_wrapper();
+    static inline void thread_dispatch_wrapper();
+    static inline void sem_open_wrapper();
+    static inline void sem_close_wrapper();
+    static inline void sem_wait_wrapper();
+    static inline void sem_signal_wrapper();
+    static inline void sem_timedwait_wrapper();
+    static inline void sem_trywait_wrapper();
+    static inline void time_sleep_wrapper();
+    static inline void putc_wrapper();
+    static inline void getc_wrapper();
+
+    static inline void default_case_wrapper(int sepc);
 };
 
 inline uint64 Riscv::r_scause()
@@ -219,27 +241,277 @@ inline void Riscv::w_sstatus(uint64 sstatus)
     __asm__ volatile("csrw sstatus, %[sstatus]" : : [sstatus] "r"(sstatus));
 }
 
-inline void Riscv::error_printer(char *s)
+inline void Riscv::error_printer(const char *s)
 {
-    while (*s != '\0')
+    int i = 0;
+    while (s[i] != '\0')
     {
         if (_console::checkTerminalTransfer() == true /*&& _console::isConsoleInterrupt()*/)
         {
-            _console::putCharInTerminal(*s);
-            s++;
+            _console::putCharInTerminal(s[i]);
+            i++;
         }
     }
-    char end1[] = "Kernel finished ugly!\n\0";
-    char *end = end1;
-    while (*end != '\0')
-    {
-        if (_console::checkTerminalTransfer() == true /*&& _console::isConsoleInterrupt()*/)
-        {
-            _console::putCharInTerminal(*end);
-            end++;
-        }
-    }
+
     plic_complete(0xa);
 }
 
+inline void Riscv::error_printInt(int xx, int base, int sgn)
+{
+    char digits[] = "0123456789abcdef";
+    char buf[16];
+    int i, neg;
+    uint x;
+
+    neg = 0;
+    if (sgn && xx < 0)
+    {
+        neg = 1;
+        x = -xx;
+    }
+    else
+    {
+        x = xx;
+    }
+
+    i = 0;
+    do
+    {
+        buf[i++] = digits[x % base];
+    } while ((x /= base) != 0);
+    if (neg)
+        buf[i++] = '-';
+
+    while (--i >= 0)
+        _console::putCharInTerminal(buf[i]);
+
+    plic_complete(0xa);
+}
+
+inline void Riscv::error_print_stack_trace(uint depth)
+{
+    static int recursionCounter = 0;
+    if (recursionCounter++ > 3)
+        return;
+
+    volatile void *framePointer;
+    uint64 returnAddress = 1;
+
+    // Dobijanje trenutnog frame pointer-a
+    __asm__ volatile("mv %0, fp" : "=r"(framePointer));
+
+    error_printer("-\n-Stack trace :\n ");
+
+    for (uint i = 0; i < depth && returnAddress; i++)
+    {
+        // Dobijanje povratne adrese
+        __asm__ volatile("ld %0, 8(%1)" : "=r"(returnAddress) : "r"(framePointer));
+
+        error_printer("   Call address: ");
+        error_printInt(returnAddress, 16, 0);
+        error_printer(" (-4)\n");
+
+        // Dobijanje sledećeg frame pointer-a
+        __asm__ volatile("ld %0, 0(%1)" : "=r"(framePointer) : "r"(framePointer));
+    }
+    error_printer("---------------------------------------\n");
+
+    recursionCounter--;
+}
+
+inline void Riscv::mem_alloc_wrapper()
+{
+    uint64 numOfBlocks;
+    __asm__ volatile("ld %[num], 11 * 8(fp)" : [num] "=r"(numOfBlocks));
+    void *volatile result = memoryAllocator::_kmalloc(numOfBlocks);
+
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+}
+
+inline void Riscv::mem_free_wrapper()
+{
+    void *ptr;
+    __asm__ volatile("ld %[ptr], 11 * 8(fp)" : [ptr] "=r"(ptr));
+    int volatile result = memoryAllocator::_kmfree(ptr);
+
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+}
+
+inline void Riscv::thread_create_wrapper()
+{
+    using Body = void (*)(void *);
+
+    _thread **volatile handle;
+    Body volatile body;
+    void *volatile arg;
+    uint64 *volatile stack_space;
+    int volatile result;
+
+    // ucitati sacuvane registre iz memorije jer menja vrednosti a4
+    __asm__ volatile("ld %[t], 11 * 8(fp)" : [t] "=r"(handle));
+    __asm__ volatile("ld %[body], 12 * 8(fp)" : [body] "=r"(body));
+    __asm__ volatile("ld %[arg], 13 * 8(fp)" : [arg] "=r"(arg));
+    __asm__ volatile("ld %[stack], 14 * 8(fp)" : [stack] "=r"(stack_space));
+    *handle = _thread::createThread(body, arg, stack_space);
+
+    result = (*handle != nullptr) ? 0 : -1;
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+}
+//__asm__ volatile("mv %0, a1" : "=r" (handle));
+
+inline void Riscv::thread_exit_wrapper()
+{
+    _thread::exit();
+    int volatile result = 0;
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+}
+
+inline void Riscv::sem_open_wrapper()
+{
+    _sem **handle;
+    uint64 init;
+
+    __asm__ volatile("ld %[handle], 11 * 8(fp)" : [handle] "=r"(handle));
+    __asm__ volatile("ld %[init], 12 * 8(fp)" : [init] "=r"(init));
+    *handle = new _sem(init);
+
+    int volatile result = (*handle == nullptr) ? -1 : 0;
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+} //__asm__  volatile("mv a0, %[a]"::[a]"r"(result));
+
+inline void Riscv::sem_close_wrapper()
+{
+    _sem *handle;
+
+    __asm__ volatile("ld %[handle], 11 * 8(fp)" : [handle] "=r"(handle));
+    int volatile result = (handle == nullptr) ? -1 : 0;
+    delete handle;
+
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+}
+
+inline void Riscv::sem_wait_wrapper()
+{
+    _sem *handle;
+    __asm__ volatile("ld %[handle], 11 * 8 (fp)" : [handle] "=r"(handle));
+
+    int volatile result = (handle == 0) ? -1 : 0;
+
+    if (result >= 0)
+        result = handle->wait();
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+}
+
+inline void Riscv::sem_signal_wrapper()
+{
+    _sem *handle;
+    __asm__ volatile("ld %[handle], 11 * 8(fp)" : [handle] "=r"(handle));
+
+    int volatile result = (handle == nullptr) ? -1 : 0;
+
+    if (handle != nullptr)
+        result = handle->signal(); // 1 if signaled any thread, 0 if didnt
+
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+    return;
+}
+
+inline void Riscv::sem_timedwait_wrapper()
+{
+    _sem *handle;
+    uint64 timeout;
+    __asm__ volatile("ld %[handle], 11 * 8(fp)" : [handle] "=r"(handle));
+    __asm__ volatile("ld %[timeout], 12 * 8(fp)" : [timeout] "=r"(timeout));
+
+    int volatile result = (handle == nullptr) ? -1 : 0;
+
+    if (result >= 0)
+        result = handle->timedWait(timeout);
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+}
+
+inline void Riscv::sem_trywait_wrapper()
+{
+    _sem *handle;
+    __asm__ volatile("ld %[handle], 11 * 8(fp)" : [handle] "=r"(handle));
+
+    int volatile result = (handle == nullptr) ? -1 : 0;
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+
+    if (handle == nullptr)
+        return;
+
+    result = handle->tryWait();
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+}
+
+inline void Riscv::thread_dispatch_wrapper()
+{
+    int volatile result = 0;
+    _thread::dispatch();
+
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+}
+inline void Riscv::time_sleep_wrapper()
+{
+
+    time_t timeForSleeping;
+    __asm__ volatile("ld %[time], 11 * 8(fp)" : [time] "=r"(timeForSleeping));
+
+    _thread::putThreadToSleep(timeForSleeping);
+
+    int volatile result = 0;
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+}
+
+inline void Riscv::putc_wrapper()
+{
+    char c;
+    __asm__ volatile("ld %[chr], 11 * 8(fp)" : [chr] "=r"(c));
+    _console::putCharInBuffer(c);
+
+    int volatile result = 0;
+    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+}
+
+inline void Riscv::getc_wrapper()
+{
+    int volatile result = _console::getCharFromBuffer();
+
+    while (result == 255)
+    {
+        _thread::putThreadToSleep(4);
+        result = _console::getCharFromBuffer();
+    }
+
+    __asm__ volatile("sb %[result], 10 * 8(fp)" : : [result] "r"(result));
+}
+
+inline void Riscv::default_case_wrapper(int sepc)
+{
+    Riscv::error_printer("Unknown ECALL TrapCode!\n");
+    error_printInt(sepc, 16);
+    error_print_stack_trace(STACK_TRACE_DEPTH);
+    killQEMU();
+    volatile int waiter = 1;
+    while (waiter)
+        ;
+}
+
+inline void Riscv::killQEMU()
+{
+    _console::PRINT_CONSOLE_IN_EMERGENCY();
+
+    error_printer("\nKernel finished\n\n");
+
+    __asm__(
+        "li t0, 0x5555\n"   // Učitajte 32-bitnu vrednost 0x5555 u registar t0
+        "li t1, 0x100000\n" // Učitajte vrednost adrese 0x100000 u registar t1
+        "sw t0, (t1)\n"     // Upisujemo vrednost iz t0 (0x5555) na adresu (t1) (0x100000)
+    );
+
+    volatile int waiter = 1;
+    while (waiter)
+        ;
+}
 #endif // OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_RISCV_HPP

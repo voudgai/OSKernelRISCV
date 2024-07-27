@@ -42,7 +42,5 @@ char getc();
 void putc(char);
 
 int get_thread_ID();
-int join_all(uint64 maxTimeWaiting);
-int set_maximum_threads(int num_of_threads, int max_time, int interval_time);
 
 #endif
