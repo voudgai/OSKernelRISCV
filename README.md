@@ -18,8 +18,7 @@ This project involves the development of a functional operating system kernel su
 - **Kernel:** Core functionalities of the operating system, implemented in C++ with assembly as needed.
 - **User Application:** Test cases and user programs to interact with the kernel.
 - **Libraries:**
-  - `app.lib`: Contains the user application code.
-  - `hw.lib`: Provides hardware access modules for the virtual environment.
+  - `hw.lib` : ONLY external library used on this project, provides hardware access modules for the virtual environment.
 
 ## Setup and Installation
 
