@@ -305,9 +305,11 @@ void List<T>::foreach (List<T>::foreachFunc func, void *aux)
 template <typename T>
 void List<T>::foreachWhile(List<T>::foreachFunc func, void *auxFunc, List<T>::conditionFunc condition, void *auxCond)
 {
-    for (Elem *curr = head; curr && condition(curr->data, auxCond); curr = curr->next)
+    for (Elem *curr = head; curr && condition(curr->data, auxCond); /*already going to next inside*/)
     {
-        func(curr->data, auxFunc);
+        Elem *toCheck = curr;
+        curr = curr->next; // in case we remove it from the list inside of foreachFunc
+        func(toCheck->data, auxFunc);
     }
 }
 #endif // LIST_HPP

@@ -43,4 +43,6 @@ void putc(char);
 
 int get_thread_ID();
 
+uint64 modification_sys_call(uint64 param1, uint64 param2, uint64 param3, uint64 param4, uint64 param5);
+
 #endif

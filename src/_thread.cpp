@@ -29,6 +29,8 @@ void _thread::exit()
     dispatch(); // in dispatch(), if thread is finished, it frees its memory
 }
 
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 bool _thread::readyToRun() { return !this->finished && !this->sleeping /*&& ! old->isJoined()  */
                                     && !(this->semStatus == WAITING || this->semStatus == TIMEDWAITING); }
 
@@ -41,35 +43,51 @@ void _thread::dispatch() // in dispatch(), if thread is finished, it frees its m
 
     if (old->isFinished())
     {
+        old->disableThread(); // moze da bude diskutabilno ponekad, PROVERITI!!!!!!!!!!!!!
         delete old;
     }
 
+    Scheduler::queueThreads.foreachWhile(deleteThread_inDispatch, nullptr, threadDEAD, nullptr);
     running = Scheduler::get();
-    while (running->isFinished() || !isThreadValid(running)) // for the case we subtleKill() the thread which was still in Scheduler
-    {
-        _thread *thrToDel = running;
-        if (isThreadValid(thrToDel))
-        {
-            thrToDel->disableThread();
-            delete thrToDel;
-        }
-        running = Scheduler::get();
-    }
+
+    Riscv::pushRegisters();
     _thread::contextSwitch(&old->context, &running->context); // yes, old thread context memory may be freed,
                                                               // but we are still in supervisor mode so nobody will get chance to use it
+    Riscv::popRegisters();
 }
+
+bool _thread::threadDEAD(_thread *thr, void *ptr)
+{
+    return !thr || !isThreadValid(thr) || thr->isFinished();
+}
+
+void _thread::deleteThread_inDispatch(_thread *thr, void *systemTimePtr)
+{
+    if (thr == nullptr)
+        return;
+
+    if (Scheduler::queueThreads.removeSpec(thr) == true &&
+        isThreadValid(thr) &&
+        thr->isFinished())
+    {
+        thr->disableThread();
+        delete thr;
+    }
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 void _thread::putThreadToSleep(uint64 timeForSleeping)
 {
-    running->sleeping = true;
-    running->timeForWakingUp = Riscv::getSystemTime() + timeForSleeping;
+    _thread::running->sleeping = true;
+    _thread::running->timeForWakingUp = Riscv::getSystemTime() + timeForSleeping;
     numOfThreadsAsleep++;
 
     listAsleepThreads.insert_sorted(_thread::running, smallerSleepTime, nullptr);
     dispatch();
 
-    running->sleeping = false;
-    running->timeForWakingUp = 0;
+    _thread::running->sleeping = false;
+    _thread::running->timeForWakingUp = 0;
     numOfThreadsAsleep--;
 }
 
@@ -98,6 +116,8 @@ void _thread::wakeThreadUp(_thread *thr, void *ptr)
         Scheduler::put(thr);
     }
 }
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 int _thread::subtleKill(_thread *threadToBeKilled)
 {

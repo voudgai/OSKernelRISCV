@@ -82,6 +82,9 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
         case Riscv::PUTC:
             putc_wrapper();
             break;
+        case Riscv::MODIFICATION:
+            modification_wrapper();
+            break;
         default:
             default_case_wrapper(sepc - 4);
         }

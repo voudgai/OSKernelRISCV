@@ -17,7 +17,11 @@ public:
     void *operator new(size_t n) { return memoryAllocator::_kmalloc((memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
     void *operator new[](size_t n) { return memoryAllocator::_kmalloc((memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
 
-    void operator delete(void *p) noexcept { memoryAllocator::_kmfree(p); }
+    void operator delete(void *p) noexcept
+    {
+        ((_sem *)(p))->~_sem();
+        memoryAllocator::_kmfree(p);
+    }
     void operator delete[](void *p) noexcept { memoryAllocator::_kmfree(p); }
 
     explicit _sem(uint64 N = 1) : val(N)
@@ -62,10 +66,10 @@ protected:
                                                                // generates return values for wait functions
 
 private:
-    long int val;
+    volatile long int val;
     List<_thread> queueBlocked; // queue of ALL blocked threads
 
-    uint64 numOfTimedWaiting = 0; // just for statistics
+    volatile uint64 numOfTimedWaiting = 0; // just for statistics
 
     static List<_sem> allSemaphores;  // UNUSED
     static uint64 numOfAllSemaphores; // UNUSED

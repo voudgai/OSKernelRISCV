@@ -14,7 +14,7 @@
 class _thread
 {
 public:
-    static inline bool isThreadValid(_thread *thr) { return (THREAD_MAGIC_NUMBER == thr->myMagicNumber); }
+    static inline bool isThreadValid(_thread *thr) { return (thr && THREAD_MAGIC_NUMBER == thr->myMagicNumber); }
 
     enum semResponses
     {
@@ -151,6 +151,9 @@ private:
 
     static bool shouldWakeUpThread(_thread *thr, void *systemTimePtr); // used for foreachWhile in listAsleepThreads
     static void wakeThreadUp(_thread *thr, void *ptr);                 // used for foreachWhile in listAsleepThreads
+
+    static bool threadDEAD(_thread *thr, void *ptr);              // used for foreachWhile in queueThreads in dispatch(), Scheduling
+    static void deleteThread_inDispatch(_thread *thr, void *ptr); // used for foreachWhile in queueThreads in dispatch(), Scheduling
 };
 
 #endif // OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_TCB_HPP

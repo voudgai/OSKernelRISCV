@@ -1,14 +1,18 @@
 #ifndef SCHEDULER_HPP
 #define SCHEDULER_HPP
 
-//#include "syscall_c.hpp"
+// #include "syscall_c.hpp"
 #include "list.hpp"
 
 class _thread;
-class Scheduler{
+class Scheduler
+{
+    friend class _thread;
+
 public:
-    static void put(_thread*);
-    static _thread* get();
+    static void put(_thread *);
+    static _thread *get();
+
 private:
     static List<_thread> queueThreads;
 };

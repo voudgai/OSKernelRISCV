@@ -77,6 +77,24 @@ public:
     // write register sstatus
     static void w_sstatus(uint64 sstatus);
 
+    // // read any register
+    // inline static uint64 read_register(const char *reg_name);
+    // inline static void write_register(const char *reg_name, uint64 value);
+    // inline static uint64 read_memory_with_index(uint64 *base, uint64 index, uint8 wordSizeInBytes)
+    // {
+    //     uint64_t value;
+    //     asm volatile("ld %0, %1(%2)"
+    //                  : "=r"(value)
+    //                  : "r"(index * wordSizeInBytes), "r"(base));
+    //     return value;
+    // }
+    // inline static void write_memory_with_index(uint64 *base, uint64 index, , uint8 wordSizeInBytes, uint64 value)
+    // {
+    //     asm volatile("sd %0, %1(%2)"
+    //                  :
+    //                  : "r"(value), "r"(index * wordSizeInBytes), "r"(base));
+    // }
+
     enum trapType : unsigned long
     {
         ECALL_U = 0x0000000000000008UL,
@@ -110,11 +128,14 @@ public:
         PUTC = 0x42,
 
         GET_THREAD_ID = 0x51,
-        JOIN_ALL = 0x52,
-        SET_MAXIMUM_THREADS = 0x53
+        MODIFICATION = 0x61
     };
     // supervisor trap
     static void supervisorTrap();
+
+    // push and pop x3..x31 registers onto stack
+    static void pushRegisters();
+    static void popRegisters();
 
     static void killQEMU();
 
@@ -146,8 +167,22 @@ private:
     static inline void putc_wrapper();
     static inline void getc_wrapper();
 
+    static inline void modification_wrapper();
+
     static inline void default_case_wrapper(int sepc);
 };
+
+// inline uint64 Riscv::read_register(const char *reg_name)
+// {
+//     volatile uint64 value;
+//     asm volatile("mv %0, %1" : "=r"(value) : "r"(reg_name));
+//     return value;
+// }
+
+// inline void Riscv::write_register(const char *reg_name, uint64 value)
+// {
+//     asm volatile("mv %0, %1" : "=r"(reg_name) : "r"(value));
+// }
 
 inline uint64 Riscv::r_scause()
 {
@@ -481,6 +516,24 @@ inline void Riscv::getc_wrapper()
     __asm__ volatile("sb %[result], 10 * 8(fp)" : : [result] "r"(result));
 }
 
+inline void Riscv::modification_wrapper()
+{
+    uint64 param1;
+    uint64 param2;
+    uint64 param3;
+    uint64 param4;
+    uint64 param5;
+    __asm__ volatile("ld %[param], 11 * 8(fp)" : [param] "=r"(param1));
+    __asm__ volatile("ld %[param], 12 * 8(fp)" : [param] "=r"(param2));
+    __asm__ volatile("ld %[param], 13 * 8(fp)" : [param] "=r"(param3));
+    __asm__ volatile("ld %[param], 14 * 8(fp)" : [param] "=r"(param4));
+    __asm__ volatile("ld %[param], 15 * 8(fp)" : [param] "=r"(param5));
+
+    uint64 volatile result = 0;
+
+    __asm__ volatile("sb %[result], 10 * 8(fp)" : : [result] "r"(result));
+}
+
 inline void Riscv::default_case_wrapper(int sepc)
 {
     Riscv::error_printer("Unknown ECALL TrapCode!\n");
@@ -496,7 +549,7 @@ inline void Riscv::killQEMU()
 {
     _console::PRINT_CONSOLE_IN_EMERGENCY();
 
-    error_printer("\nKernel finished\n\n");
+    error_printer("\nKernel finished! :)\n\n");
 
     __asm__(
         "li t0, 0x5555\n"   // Učitajte 32-bitnu vrednost 0x5555 u registar t0

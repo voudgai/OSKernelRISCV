@@ -232,3 +232,22 @@ int get_thread_ID()
     __asm__ volatile("mv %0, a0" : "=r"(result));
     return result;
 }
+
+uint64 modification_sys_call(uint64 param1, uint64 param2, uint64 param3, uint64 param4, uint64 param5)
+{
+    static const int volatile trapCode = 0x61;
+
+    __asm__ volatile("mv a5, %[param]" : : [param] "r"(param5));
+    __asm__ volatile("mv a4, %[param]" : : [param] "r"(param4));
+    __asm__ volatile("mv a3, %[param]" : : [param] "r"(param3));
+    __asm__ volatile("mv a2, %[param]" : : [param] "r"(param2));
+    __asm__ volatile("mv a1, %[param]" : : [param] "r"(param1));
+    __asm__ volatile("mv a0, %[trapCode]" : : [trapCode] "r"(trapCode));
+
+    __asm__ volatile("ecall");
+
+    uint64 result;
+    __asm__ volatile("mv %0, a0" : "=r"(result));
+
+    return result;
+}
