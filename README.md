@@ -75,8 +75,6 @@ This project involves the development of a functional operating system kernel su
 This project is licensed under the MIT License. See the `LICENSE` file for more details.
 
 ## Acknowledgements
-
-- Prof. Dr. Dragan Milićev
 - School of Electrical Engineering, University of Belgrade
 - xv6 Educational Operating System
 
