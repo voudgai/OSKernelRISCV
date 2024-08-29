@@ -33,7 +33,7 @@ public:
     {
         if (!p)
             return;
-        static_cast<_thread *>(p)->~_thread();
+        // static_cast<_thread *>(p)->~_thread();
         memoryAllocator::_kmfree(p);
     }
 

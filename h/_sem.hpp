@@ -19,7 +19,7 @@ public:
 
     void operator delete(void *p) noexcept
     {
-        ((_sem *)(p))->~_sem();
+        // ((_sem *)(p))->~_sem();
         memoryAllocator::_kmfree(p);
     }
     void operator delete[](void *p) noexcept { memoryAllocator::_kmfree(p); }
