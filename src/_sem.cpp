@@ -14,7 +14,7 @@ int _sem::generateWAITResponses(_thread::semResponses response)
     if (response == _thread::NON_WAITING)
         return _sem::SEMDIDNTWAIT;
 
-    if (response == _thread::WAITING)
+    if (response == _thread::WAITING || response == _thread::TIMEDWAITING)
         return _sem::SEMERROR;
 
     if (response == _thread::SEM_DELETED)
@@ -22,6 +22,9 @@ int _sem::generateWAITResponses(_thread::semResponses response)
 
     if (response == _thread::REGULARLY_WAITED)
         return _sem::SEMOKAY;
+
+    if (response == _thread::TIMEOUT)
+        return _sem::SEMTIMEOUT;
 
     return _sem::SEMUNEXPECTED; // should never happen
 }

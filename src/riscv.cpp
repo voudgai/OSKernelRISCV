@@ -30,7 +30,7 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
             error_printInt(sepc, 16, 0);
             error_printer(" !\n");
 
-            error_print_stack_trace(STACK_TRACE_DEPTH);
+            error_print_stack_trace(STACK_TRACE_DEPTH, sepc);
         }
 
         sepc += 4;
@@ -121,26 +121,26 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
     else if (scause == Riscv::ILLEGAL_INSTRUCTION)
     {
         Riscv::error_printer("Illegal instruction!\n\0");
-        error_print_stack_trace(STACK_TRACE_DEPTH);
+        error_print_stack_trace(STACK_TRACE_DEPTH, sepc);
         killQEMU();
     }
     else if (scause == Riscv::ILLEGAL_RD_ADDR)
     {
         Riscv::error_printer("Illegal address for reading!\n\0");
-        error_print_stack_trace(STACK_TRACE_DEPTH);
+        error_print_stack_trace(STACK_TRACE_DEPTH, sepc);
         killQEMU();
     }
     else if (scause == Riscv::ILLEGAL_WR_ADDR)
     {
         Riscv::error_printer("Illegal address for writing!\n\0");
-        error_print_stack_trace(STACK_TRACE_DEPTH);
+        error_print_stack_trace(STACK_TRACE_DEPTH, sepc);
         killQEMU();
     }
     else
     {
         Riscv::error_printer("Unknown interrupt!\n\0");
         error_printInt(scause, 2);
-        error_print_stack_trace(STACK_TRACE_DEPTH);
+        error_print_stack_trace(STACK_TRACE_DEPTH, sepc);
         killQEMU();
     }
     Riscv::w_sstatus(sstatus);

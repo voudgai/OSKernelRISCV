@@ -149,7 +149,7 @@ private:
     // error printer in S mode
     inline static void error_printer(const char *s);
     inline static void error_printInt(int xx, int base = 10, int sgn = 0);
-    inline static void error_print_stack_trace(uint depth);
+    inline static void error_print_stack_trace(uint depth, uint64 sepc);
     static constexpr uint STACK_TRACE_DEPTH = 1;
 
     static inline void mem_alloc_wrapper();
@@ -323,7 +323,7 @@ inline void Riscv::error_printInt(int xx, int base, int sgn)
     plic_complete(0xa);
 }
 
-inline void Riscv::error_print_stack_trace(uint depth)
+inline void Riscv::error_print_stack_trace(uint depth, uint64 sepc)
 {
     static int recursionCounter = 0;
     if (recursionCounter++ > 3)
@@ -337,12 +337,16 @@ inline void Riscv::error_print_stack_trace(uint depth)
 
     error_printer("-\n-Stack trace :\n ");
 
+    error_printer(" Current SEPC: 0x");
+    error_printInt(sepc, 16, 0);
+    error_printer("\n");
+
     for (uint i = 0; i < depth && returnAddress; i++)
     {
         // Dobijanje povratne adrese
         __asm__ volatile("ld %0, 8(%1)" : "=r"(returnAddress) : "r"(framePointer));
 
-        error_printer("   Call address: ");
+        error_printer("   Call address: 0x");
         error_printInt(returnAddress, 16, 0);
         error_printer(" (-4)\n");
 
@@ -537,8 +541,7 @@ inline void Riscv::modification_wrapper()
 inline void Riscv::default_case_wrapper(int sepc)
 {
     Riscv::error_printer("Unknown ECALL TrapCode!\n");
-    error_printInt(sepc, 16);
-    error_print_stack_trace(STACK_TRACE_DEPTH);
+    error_print_stack_trace(STACK_TRACE_DEPTH, sepc);
     killQEMU();
     volatile int waiter = 1;
     while (waiter)

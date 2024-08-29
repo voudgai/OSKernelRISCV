@@ -10,17 +10,27 @@ class testThreadAVG2023 : public Thread
 public:
     void run() override
     {
-        int i = 1;
+        static int ID = 0;
+        int id = ID++;
+        int i = 1; // dont change, be careful with this test
         while (i > 0)
         {
-            int id = get_thread_ID();
-            time_sleep(id * 2);
+            int x = waitForAll1->timedWait(id * id);
+
             printString("Thread ID: ");
             printInt(id);
-            printString(".\n");
+            printString("; ");
+
+            printString("Kod za TimedWait : ");
+            printInt(x, 10, 1);
+            printString(". \n");
+
             i--;
         }
-        waitForAll1->signal();
+        ID--;
+
+        if (ID == 0)
+            waitForAll1->signal();
     }
 };
 
@@ -39,9 +49,10 @@ int modifikacijaAvg2023()
     {
         threads[i]->start();
     }
-    for (int i = 0; i < 20; i++)
-    {
-        waitForAll1->wait();
-    }
+    thread_dispatch();
+    // for (int i = 0; i < 20; i++)
+    // {
+    waitForAll1->wait();
+    // }
     return 0;
 }
