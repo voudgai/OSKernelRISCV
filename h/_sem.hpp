@@ -5,10 +5,10 @@
 #ifndef PROJECT_FOR_REAL__SEM_HPP
 #define PROJECT_FOR_REAL__SEM_HPP
 
-#include "_thread.hpp"
 #include "memoryAllocator.hpp"
 #include "list.hpp"
 
+class _thread;
 class _sem
 {
 public:
@@ -32,7 +32,7 @@ public:
 
     ~_sem()
     {
-        unblockAll_CLOSING();
+        unblockAll(SEM_DELETED);
         allSemaphores.removeSpec(this);
         numOfAllSemaphores--;
     }
@@ -43,27 +43,37 @@ public:
 
     uint64 value() const { return val; }
 
+    enum threadsSemStatus // possible status for threads
+    {
+        NON_WAITING,      // thread is not blocked on semaphore
+        WAITING,          // thread is on semaphore by .wait()
+        TIMEDWAITING,     // thread is on semaphore by .timedWait(time)
+        REGULARLY_WAITED, // thread just finished waiting by .signal()
+        TIMEOUT,          // thread was timedWaiting and time went out so it got woken up (unblockedByTime())
+        SEM_DELETED       // thread was waiting on sem which got deleted
+    };
+
     enum semWaitAnswers // possible answers for ALL wait functions
     {
-        SEMDIDNTWAIT = 1,
-        SEMOKAY = 0,
-        SEMDEAD = -1,
-        SEMTIMEOUT = -2,
+        SEM_DIDNTWAIT = 1,
+        SEM_OKAYWAITED = 0,
+        SEM_DEAD = -1,
+        SEM_TIMEOUT = -2,
         HANDLE_NULL = -3,
-        SEMUNEXPECTED = -4,
-        SEMERROR = -5,
+        SEM_UNEXPECTED = -4,
+        SEM_ERROR = -5,
     };
 
 protected:
-    void block();                                                                    // blocks a thread which is regularly waiting
-    void timedBlock(uint64 timeSleepingAtMost);                                      // blocks a thread which is time_waiting
-    void unblock(_thread::semResponses unblockingCause = _thread::REGULARLY_WAITED); // unblocks a thread from either one of the waits, and sets response
-    void unblockedByTime(_thread *old);                                              // called from _thread when there is thread to be woken up which is timed_blocked
-    void unblockAll_CLOSING();                                                       // unblocks all threads waiting here
+    void block();                                                      // blocks a thread which is regularly waiting
+    void timedBlock(uint64 timeSleepingAtMost);                        // blocks a thread which is time_waiting
+    void unblock(threadsSemStatus unblockingCause = REGULARLY_WAITED); // unblocks a thread from either one of the waits, and sets response
+    void unblockedByTime(_thread *old);                                // called from _thread when there is thread to be woken up which is timed_blocked
+    void unblockAll(threadsSemStatus unblockingStatus);                // unblocks all threads waiting on this semaphore
     // void unblockTimesUp();
 
-    int generateWAITResponses(_thread::semResponses response); // depending on threads state when returning from block,
-                                                               // generates return values for wait functions
+    int generateWAITResponses(threadsSemStatus response); // depending on threads state when returning from block,
+                                                          // generates return values for wait functions
 
 private:
     volatile long int val;

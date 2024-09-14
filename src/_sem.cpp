@@ -7,53 +7,53 @@
 List<_sem> _sem::allSemaphores;
 uint64 _sem::numOfAllSemaphores = 0;
 
-int _sem::generateWAITResponses(_thread::semResponses response)
+int _sem::generateWAITResponses(threadsSemStatus status)
 {
     /* generates response from thread information after waking up */
 
-    if (response == _thread::NON_WAITING)
-        return _sem::SEMDIDNTWAIT;
+    if (status == NON_WAITING)
+        return _sem::SEM_DIDNTWAIT; // it did not wait
 
-    if (response == _thread::WAITING || response == _thread::TIMEDWAITING)
-        return _sem::SEMERROR;
+    if (status == WAITING || status == TIMEDWAITING)
+        return _sem::SEM_ERROR; // how can it be still waiting if its unblocked
 
-    if (response == _thread::SEM_DELETED)
-        return _sem::SEMDEAD;
+    if (status == SEM_DELETED)
+        return _sem::SEM_DEAD; // semaphore was deleted and thats how all threads got released
 
-    if (response == _thread::REGULARLY_WAITED)
-        return _sem::SEMOKAY;
+    if (status == REGULARLY_WAITED)
+        return _sem::SEM_OKAYWAITED; // thread was unblocked by signal
 
-    if (response == _thread::TIMEOUT)
-        return _sem::SEMTIMEOUT;
+    if (status == TIMEOUT)
+        return _sem::SEM_TIMEOUT; // thread was unblocked by time
 
-    return _sem::SEMUNEXPECTED; // should never happen
+    return _sem::SEM_UNEXPECTED; // should never happen
 }
 
 int _sem::wait()
 {
     --this->val;
     if (this->val >= 0)
-        return _sem::SEMDIDNTWAIT;
+        return SEM_DIDNTWAIT;
 
     block();
 
-    _thread::semResponses response = _thread::running->getThreadsSemStatus();
-    _thread::running->setThreadsSemStatus(_thread::NON_WAITING);
+    threadsSemStatus status = _thread::running->getThreadsSemStatus();
+    _thread::running->setThreadsSemStatus(NON_WAITING);
 
-    return generateWAITResponses(response);
+    return generateWAITResponses(status);
 }
 
-int _sem::timedWait(uint64 timeSleepingMost)
+int _sem::timedWait(uint64 maxTimeSleeping)
 {
     if (--this->val >= 0)
-        return _sem::SEMDIDNTWAIT;
+        return SEM_DIDNTWAIT;
 
-    timedBlock(timeSleepingMost);
+    timedBlock(maxTimeSleeping);
 
-    _thread::semResponses response = _thread::running->getThreadsSemStatus();
-    _thread::running->setThreadsSemStatus(_thread::NON_WAITING);
+    threadsSemStatus status = _thread::running->getThreadsSemStatus();
+    _thread::running->setThreadsSemStatus(NON_WAITING);
 
-    return generateWAITResponses(response);
+    return generateWAITResponses(status);
 }
 
 void _sem::block()
@@ -61,22 +61,23 @@ void _sem::block()
     _thread *old = _thread::running;
 
     queueBlocked.addLast(old);
-    old->setThreadsSemStatus(_thread::WAITING); // promenicemo u destruktoru semafora ako se obrise u medjuvremenu
+    old->setThreadsSemStatus(WAITING);
 
     old->mySem = this;
     _thread::dispatch();
     old->mySem = nullptr;
 }
 
-void _sem::timedBlock(uint64 timeSleepingAtMost)
+void _sem::timedBlock(uint64 maxTimeSleeping)
 {
-    uint64 timeForRelease = timeSleepingAtMost + Riscv::getSystemTime();
+    uint64 timeForRelease = maxTimeSleeping + Riscv::getSystemTime();
 
     _thread *old = _thread::running;
-    old->semStatus = _thread::TIMEDWAITING;
+
+    old->semStatus = TIMEDWAITING;
+    old->timeForWakingUp = timeForRelease;
 
     queueBlocked.addLast(old);
-    old->timeForWakingUp = timeForRelease;
     _thread::listAsleepThreads.insert_sorted(_thread::running, _thread::smallerSleepTime, nullptr);
 
     numOfTimedWaiting++;
@@ -98,16 +99,16 @@ int _sem::signal()
 {
     ++this->val;
     if (this->val > 0)
-        return 0; // 0 ako nikoga nije probudio
-    unblock();
-    return 1; // ako jeste
+        return 0; //  returns 0 if theres nobody to activate
+    unblock(REGULARLY_WAITED);
+    return 1; // returns 1 if theres somebody
 }
 
-void _sem::unblock(_thread::semResponses unblockingCause)
+void _sem::unblock(threadsSemStatus unblockingCause)
 {
     _thread *old = queueBlocked.removeFirst();
 
-    if (old->getThreadsSemStatus() == _thread::TIMEDWAITING)
+    if (old->getThreadsSemStatus() == TIMEDWAITING)
         _thread::listAsleepThreads.removeSpec(old);
 
     old->mySem = nullptr;
@@ -115,9 +116,9 @@ void _sem::unblock(_thread::semResponses unblockingCause)
     Scheduler::put(old);
 }
 
-void _sem::unblockedByTime(_thread *old)
+void _sem::unblockedByTime(_thread *old) // called by function which wakes up threads in _thread class
 {
-    if (old->getThreadsSemStatus() != _thread::TIMEDWAITING)
+    if (old->getThreadsSemStatus() != TIMEDWAITING)
         return;
 
     val++; // this is difference from normal unblocking; we need to increase val
@@ -125,43 +126,16 @@ void _sem::unblockedByTime(_thread *old)
     _thread::listAsleepThreads.removeSpec(old);
     _sem::queueBlocked.removeSpec(old);
 
-    // old->mySem = nullptr; // this would be done anyways after returning from dispatch
-    old->setThreadsSemStatus(_thread::TIMEOUT);
+    old->mySem = nullptr; // this would be done anyways after returning from dispatch
+    old->setThreadsSemStatus(TIMEOUT);
     Scheduler::put(old);
 }
 
-void _sem::unblockAll_CLOSING()
+void _sem::unblockAll(threadsSemStatus unblockingCause = SEM_DELETED)
 {
     for (; val < 0; val++)
-    {
-        unblock(_thread::SEM_DELETED);
-    }
+        unblock(unblockingCause);
 }
-
-// void _sem::unblockTimesUp()
-// {
-//     // TODO
-//     //------------------------------------------------------------------------//------------------------------------------------------------------------
-
-//     uint64 systemTime = Riscv::getSystemTime();
-//     uint64 N = numOfTimedWaiting;
-//     for (uint64 i = 0; i < N; i++)
-//     {
-//         _thread *old = queueTimedBlock.removeFirst();
-//         if (old->timedWait_semTimeRelease <= systemTime)
-//         {
-//             old->semStatus = _thread::TIMEOUT;
-//             old->timedWait_semTimeRelease = 0;
-//             Scheduler::put(old);
-//             numOfTimedWaiting--;
-//             val++;
-//         }
-//         else
-//         {
-//             queueTimedBlock.addLast(old);
-//         }
-//     }
-// }
 
 int _sem::tryWait()
 {

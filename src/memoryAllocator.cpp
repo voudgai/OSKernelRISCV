@@ -1,5 +1,4 @@
 #include "../h/memoryAllocator.hpp"
-#include "../h/print.hpp"
 
 void *memoryAllocator::headFree = (void *)(HEAP_START_ADDR);
 

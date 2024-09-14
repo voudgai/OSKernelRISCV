@@ -134,20 +134,22 @@ private:
     inline static void error_msg_terminate(const char *s, volatile uint64 sepc);
     static constexpr uint STACK_TRACE_DEPTH = 1;
 
-    static inline void mem_alloc_wrapper();
-    static inline void mem_free_wrapper();
-    static inline void thread_create_wrapper();
-    static inline void thread_exit_wrapper();
-    static inline void thread_dispatch_wrapper();
-    static inline void sem_open_wrapper();
-    static inline void sem_close_wrapper();
-    static inline void sem_wait_wrapper();
-    static inline void sem_signal_wrapper();
-    static inline void sem_timedwait_wrapper();
-    static inline void sem_trywait_wrapper();
-    static inline void time_sleep_wrapper();
-    static inline void putc_wrapper();
-    static inline void getc_wrapper();
+    using Body = void (*)(void *);
+
+    static inline uint64 mem_alloc_wrapper(uint64 numOfBlocks);
+    static inline uint64 mem_free_wrapper(void *ptr);
+    static inline uint64 thread_create_wrapper(_thread **handle, Body body, void *arg, uint64 *stack_space);
+    static inline uint64 thread_exit_wrapper();
+    static inline uint64 thread_dispatch_wrapper();
+    static inline uint64 sem_open_wrapper(_sem **handle, uint64 val);
+    static inline uint64 sem_close_wrapper(_sem *sem);
+    static inline uint64 sem_wait_wrapper(_sem *sem);
+    static inline uint64 sem_signal_wrapper(_sem *sem);
+    static inline uint64 sem_timedwait_wrapper(_sem *sem, uint64 maxTime);
+    static inline uint64 sem_trywait_wrapper(_sem *sem);
+    static inline uint64 time_sleep_wrapper(uint64 timeForSleep);
+    static inline uint64 putc_wrapper(char c);
+    static inline uint64 getc_wrapper();
 };
 
 inline uint64 Riscv::r_scause()
@@ -261,13 +263,14 @@ inline void Riscv::priority_print_int(int xx, int base, int sgn)
 {
     char digits[] = "0123456789abcdef";
     char buf[16];
-    int i, neg;
+    int i;
+    bool neg;
     uint x;
 
-    neg = 0;
+    neg = false;
     if (sgn && xx < 0)
     {
-        neg = 1;
+        neg = true;
         x = -xx;
     }
     else
@@ -280,6 +283,7 @@ inline void Riscv::priority_print_int(int xx, int base, int sgn)
     {
         buf[i++] = digits[x % base];
     } while ((x /= base) != 0);
+
     if (neg)
         buf[i++] = '-';
 
@@ -331,166 +335,100 @@ inline void Riscv::error_msg_terminate(const char *s, uint64 sepc)
     killQEMU();
 }
 
-inline void Riscv::mem_alloc_wrapper()
+inline uint64 Riscv::mem_alloc_wrapper(uint64 numOfBlocks)
 {
-    uint64 numOfBlocks;
-    __asm__ volatile("ld %[num], 11 * 8(fp)" : [num] "=r"(numOfBlocks));
-    void *volatile result = memoryAllocator::_kmalloc(numOfBlocks);
-
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+    return (uint64)memoryAllocator::_kmalloc(numOfBlocks);
 }
 
-inline void Riscv::mem_free_wrapper()
+inline uint64 Riscv::mem_free_wrapper(void *ptr)
 {
-    void *ptr;
-    __asm__ volatile("ld %[ptr], 11 * 8(fp)" : [ptr] "=r"(ptr));
-    int volatile result = memoryAllocator::_kmfree(ptr);
-
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+    return memoryAllocator::_kmfree(ptr);
 }
 
-inline void Riscv::thread_create_wrapper()
+inline uint64 Riscv::thread_create_wrapper(_thread **handle, Body body, void *arg, uint64 *stack_space)
 {
-    using Body = void (*)(void *);
-
-    _thread **volatile handle;
-    Body volatile body;
-    void *volatile arg;
-    uint64 *volatile stack_space;
-    int volatile result;
-
-    // ucitati sacuvane registre iz memorije jer menja vrednosti a4
-    __asm__ volatile("ld %[t], 11 * 8(fp)" : [t] "=r"(handle));
-    __asm__ volatile("ld %[body], 12 * 8(fp)" : [body] "=r"(body));
-    __asm__ volatile("ld %[arg], 13 * 8(fp)" : [arg] "=r"(arg));
-    __asm__ volatile("ld %[stack], 14 * 8(fp)" : [stack] "=r"(stack_space));
     *handle = _thread::createThread(body, arg, stack_space);
-
-    result = (*handle != nullptr) ? 0 : -1;
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+    return (*handle != nullptr) ? 0 : -1;
 }
 //__asm__ volatile("mv %0, a1" : "=r" (handle));
 
-inline void Riscv::thread_exit_wrapper()
+inline uint64 Riscv::thread_exit_wrapper()
 {
     _thread::exit();
-    int volatile result = 0;
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+    return -1;
 }
 
-inline void Riscv::sem_open_wrapper()
+inline uint64 Riscv::thread_dispatch_wrapper()
 {
-    _sem **handle;
-    uint64 init;
+    _thread::dispatch();
+    return 0;
+}
 
-    __asm__ volatile("ld %[handle], 11 * 8(fp)" : [handle] "=r"(handle));
-    __asm__ volatile("ld %[init], 12 * 8(fp)" : [init] "=r"(init));
-    *handle = new _sem(init);
-
-    int volatile result = (*handle == nullptr) ? -1 : 0;
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+inline uint64 Riscv::sem_open_wrapper(_sem **handle, uint64 val)
+{
+    *handle = new _sem(val);
+    return (*handle == nullptr) ? -1 : 0;
 } //__asm__  volatile("mv a0, %[a]"::[a]"r"(result));
 
-inline void Riscv::sem_close_wrapper()
+inline uint64 Riscv::sem_close_wrapper(_sem *sem)
 {
-    _sem *handle;
+    if (!sem)
+        return -1;
 
-    __asm__ volatile("ld %[handle], 11 * 8(fp)" : [handle] "=r"(handle));
-    int volatile result = (handle == nullptr) ? -1 : 0;
-    delete handle;
-
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+    delete sem;
+    return 0;
 }
 
-inline void Riscv::sem_wait_wrapper()
+inline uint64 Riscv::sem_wait_wrapper(_sem *sem)
 {
-    _sem *handle;
-    __asm__ volatile("ld %[handle], 11 * 8 (fp)" : [handle] "=r"(handle));
+    if (!sem)
+        return -1;
 
-    int volatile result = (handle == 0) ? -1 : 0;
-
-    if (result >= 0)
-        result = handle->wait();
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+    return sem->wait();
 }
 
-inline void Riscv::sem_signal_wrapper()
+inline uint64 Riscv::sem_signal_wrapper(_sem *sem)
 {
-    _sem *handle;
-    __asm__ volatile("ld %[handle], 11 * 8(fp)" : [handle] "=r"(handle));
+    if (!sem)
+        return -1;
 
-    int volatile result = (handle == nullptr) ? -1 : 0;
-
-    if (handle != nullptr)
-        result = handle->signal(); // 1 if signaled any thread, 0 if didnt
-
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
-    return;
+    return sem->signal(); // 1 if signaled any thread, 0 if didnt
 }
 
-inline void Riscv::sem_timedwait_wrapper()
+inline uint64 Riscv::sem_timedwait_wrapper(_sem *sem, uint64 maxTime)
 {
-    _sem *handle;
-    uint64 timeout;
-    __asm__ volatile("ld %[handle], 11 * 8(fp)" : [handle] "=r"(handle));
-    __asm__ volatile("ld %[timeout], 12 * 8(fp)" : [timeout] "=r"(timeout));
+    if (!sem)
+        return -1;
 
-    int volatile result = (handle == nullptr) ? -1 : 0;
-
-    if (result >= 0)
-        result = handle->timedWait(timeout);
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+    return sem->timedWait(maxTime);
 }
 
-inline void Riscv::sem_trywait_wrapper()
+inline uint64 Riscv::sem_trywait_wrapper(_sem *sem)
 {
-    _sem *handle;
-    __asm__ volatile("ld %[handle], 11 * 8(fp)" : [handle] "=r"(handle));
+    if (!sem)
+        return -1;
 
-    int volatile result = (handle == nullptr) ? -1 : 0;
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
-
-    if (handle == nullptr)
-        return;
-
-    result = handle->tryWait();
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+    return sem->tryWait();
 }
 
-inline void Riscv::thread_dispatch_wrapper()
-{
-    int volatile result = 0;
-    _thread::dispatch();
-
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
-}
-inline void Riscv::time_sleep_wrapper()
+inline uint64 Riscv::time_sleep_wrapper(uint64 timeForSleeping)
 {
 
-    time_t timeForSleeping;
-    __asm__ volatile("ld %[time], 11 * 8(fp)" : [time] "=r"(timeForSleeping));
+    if (timeForSleeping > ((uint64)1 << 63))
+        timeForSleeping = timeForSleeping >> 1;
 
     _thread::putThreadToSleep(timeForSleeping);
-
-    int volatile result = 0;
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+    return 0;
 }
 
-inline void Riscv::putc_wrapper()
+inline uint64 Riscv::getc_wrapper()
 {
-    char c;
-    __asm__ volatile("ld %[chr], 11 * 8(fp)" : [chr] "=r"(c));
-    _console::putCharInBuffer(c);
-
-    int volatile result = 0;
-    __asm__ volatile("sd %[result], 10 * 8(fp)" : : [result] "r"(result));
+    return (uint64)_console::getCharFromBuffer();
 }
 
-inline void Riscv::getc_wrapper()
+inline uint64 Riscv::putc_wrapper(char c)
 {
-    int volatile result = _console::getCharFromBuffer();
-
-    __asm__ volatile("sb %[result], 10 * 8(fp)" : : [result] "r"(result));
+    return _console::putCharInBuffer(c);
 }
 
 inline void Riscv::killQEMU()

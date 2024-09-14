@@ -31,8 +31,7 @@ void _thread::exit()
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-bool _thread::readyToRun() { return !this->finished && !this->sleeping /*&& ! old->isJoined()  */
-                                    && !(this->semStatus == WAITING || this->semStatus == TIMEDWAITING); }
+bool _thread::readyToRun() { return !this->finished && !this->sleeping && !(this->semStatus == _sem::WAITING || this->semStatus == _sem::TIMEDWAITING); }
 
 void _thread::dispatch() // in dispatch(), if thread is finished, it frees its memory
 {
@@ -59,6 +58,14 @@ void _thread::dispatch() // in dispatch(), if thread is finished, it frees its m
 bool _thread::threadDEAD(_thread *thr, void *ptr)
 {
     return !thr || !isThreadValid(thr) || thr->isFinished();
+}
+
+void _thread::disableThread()
+{
+    if (!isThreadValid(this))
+        return; // already disabled
+    myMagicNumber = THREAD_DUMP_MAGIC_NUMBER;
+    memoryAllocator::_kmfree(stack);
 }
 
 void _thread::deleteThread_inDispatch(_thread *thr, void *systemTimePtr)
@@ -106,7 +113,7 @@ void _thread::wakeThreadUp(_thread *thr, void *ptr)
     if (!thr || !isThreadValid(thr))
         return;
 
-    if (thr->getThreadsSemStatus() == TIMEDWAITING)
+    if (thr->getThreadsSemStatus() == _sem::TIMEDWAITING)
     {
         if (thr->mySem != nullptr)
             (thr->mySem)->unblockedByTime(thr);

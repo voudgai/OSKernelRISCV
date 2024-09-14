@@ -9,7 +9,7 @@ extern int modifikacijaPredrok();
 extern int modifikacijaJun();
 extern int modifikacijaAvg2023();
 
-bool finished = false;
+static bool finished = false;
 
 void idleThread(void *ptr)
 {
@@ -17,16 +17,10 @@ void idleThread(void *ptr)
     thread_create(&userMain_thread, funcWrapper, nullptr);
 
     while (!finished)
-    {
         thread_dispatch();
-    }
 }
 void funcWrapper(void *ptr)
 {
-    //::mainCopeTest(ptr);
-    // ::modifikacijaPredrok();
-    //::modifikacijaAvg2023();
-    // ::modifikacijaJun();
     ::userMain();
 
     finished = true;
