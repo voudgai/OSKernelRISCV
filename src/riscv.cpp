@@ -4,96 +4,93 @@
 #include "../h/memoryAllocator.hpp"
 #include "../h/syscall_cpp.hpp"
 
-extern void killQEMU();
-
 uint64 Riscv::SYS_TIME = 0;
 
 class Console;
 
 void Riscv::popSppSpieChangeMod()
 {
-    mc_sstatus(Riscv::SSTATUS_SPP);
-    __asm__ volatile("csrw sepc, ra");
-    __asm__ volatile("sret");
+    mc_sstatus(SSTATUS_SPP);           // set previous privilege to 0 (user regime)
+    __asm__ volatile("csrw sepc, ra"); // set sepc to return adress
+    __asm__ volatile("sret");          // call return function from S mode
 }
 
-void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
+void Riscv::handleSupervisorTrap(uint64 a0, uint64 a1, uint64 a2, uint64 a3, uint64 a4, uint64 a5) // CALLED FOR TRAP HANDLING
 {
     uint64 scause = r_scause();
-    uint64 volatile sepc = Riscv::r_sepc();
-    uint64 volatile sstatus = Riscv::r_sstatus();
-    if (scause == Riscv::ECALL_U || scause == Riscv::ECALL_S)
+    uint64 volatile sepc = r_sepc();
+    uint64 volatile sstatus = r_sstatus();
+    if (scause == ECALL_U || scause == ECALL_S)
     {
-        if (scause == Riscv::ECALL_S && _thread::running != nullptr && _thread::running->body != nullptr)
+        if (scause == ECALL_S && _thread::running != nullptr && _thread::running->body != nullptr)
         {
-            error_printer("Nested system calls at: 0x");
-            error_printInt(sepc, 16, 0);
-            error_printer(" !\n");
+            priority_print("Nested system calls at: 0x");
+            priority_print_int(sepc, 16, 0);
+            priority_print(" !\n");
 
-            error_print_stack_trace(STACK_TRACE_DEPTH, sepc);
+            print_stack_trace(STACK_TRACE_DEPTH, sepc);
         }
 
         sepc += 4;
 
-        uint64 volatile callCode;
-        __asm__ volatile("ld %[code], 10 * 8(fp)" : [code] "=r"(callCode));
+        uint64 volatile ecallCode;
+        __asm__ volatile("ld %[code], 10 * 8(fp)" : [code] "=r"(ecallCode));
 
-        switch (callCode)
+        switch (ecallCode)
         {
-        case Riscv::MALLOC:
+        case MALLOC:
             mem_alloc_wrapper();
             break;
-        case Riscv::MFREE:
+        case MFREE:
             mem_free_wrapper();
             break;
-        case Riscv::THREAD_CREATE:
+        case THREAD_CREATE:
             thread_create_wrapper();
             break;
-        case Riscv::THREAD_EXIT:
+        case THREAD_EXIT:
             thread_exit_wrapper();
             break;
-        case Riscv::THREAD_DISPATCH:
+        case THREAD_DISPATCH:
             thread_dispatch_wrapper();
             break;
-        case Riscv::SEM_OPEN:
+        case SEM_OPEN:
             sem_open_wrapper();
             break;
-        case Riscv::SEM_CLOSE:
+        case SEM_CLOSE:
             sem_close_wrapper();
             break;
-        case Riscv::SEM_WAIT:
+        case SEM_WAIT:
             sem_wait_wrapper();
             break;
-        case Riscv::SEM_SIGNAL:
+        case SEM_SIGNAL:
             sem_signal_wrapper();
             break;
-        case Riscv::SEM_TIMEDWAIT:
+        case SEM_TIMEDWAIT:
             sem_timedwait_wrapper();
             break;
-        case Riscv::SEM_TRYWAIT:
+        case SEM_TRYWAIT:
             sem_trywait_wrapper();
             break;
-        case Riscv::TIME_SLEEP:
+        case TIME_SLEEP:
             time_sleep_wrapper();
             break;
-        case Riscv::GETC:
+        case GETC:
             getc_wrapper();
             break;
-        case Riscv::PUTC:
+        case PUTC:
             putc_wrapper();
             break;
-        case Riscv::MODIFICATION:
-            modification_wrapper();
-            break;
         default:
-            default_case_wrapper(sepc - 4);
+            priority_print("ECALLs TrapCode : ");
+            priority_print_int(ecallCode);
+            error_msg_terminate(" - Unknown ECALL TrapCode!\n", sepc - 4);
         }
     }
-    else if (scause == Riscv::TIMER)
+    else if (scause == TIMER)
     {
-        Riscv::mc_sip(Riscv::SIP_SSIP);
+        mc_sip(SIP_SSIP);
 
-        Riscv::incSysTime();
+        incSysTime();
         _thread::incTimeSliceCounter();
 
         { // wake-up asleep threads if needed (timed_wait + time_sleep)
@@ -107,7 +104,7 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
             }
         }
     }
-    else if (scause == Riscv::CONSOLE)
+    else if (scause == CONSOLE)
     {
         int intNumber = plic_claim();
         if (intNumber == 0xa)
@@ -118,31 +115,24 @@ void Riscv::handleSupervisorTrap() // CALLED FOR TRAP HANDLING
             plic_complete(intNumber);
     }
 
-    else if (scause == Riscv::ILLEGAL_INSTRUCTION)
+    else if (scause == ILLEGAL_INSTRUCTION)
     {
-        Riscv::error_printer("Illegal instruction!\n\0");
-        error_print_stack_trace(STACK_TRACE_DEPTH, sepc);
-        killQEMU();
+        error_msg_terminate("Illegal instruction!\n\0", sepc);
     }
-    else if (scause == Riscv::ILLEGAL_RD_ADDR)
+    else if (scause == ILLEGAL_RD_ADDR)
     {
-        Riscv::error_printer("Illegal address for reading!\n\0");
-        error_print_stack_trace(STACK_TRACE_DEPTH, sepc);
-        killQEMU();
+        error_msg_terminate("Illegal address for reading!\n\0", sepc);
     }
-    else if (scause == Riscv::ILLEGAL_WR_ADDR)
+    else if (scause == ILLEGAL_WR_ADDR)
     {
-        Riscv::error_printer("Illegal address for writing!\n\0");
-        error_print_stack_trace(STACK_TRACE_DEPTH, sepc);
-        killQEMU();
+        error_msg_terminate("Illegal address for writing!\n\0", sepc);
     }
     else
     {
-        Riscv::error_printer("Unknown interrupt!\n\0");
-        error_printInt(scause, 2);
-        error_print_stack_trace(STACK_TRACE_DEPTH, sepc);
-        killQEMU();
+        priority_print("Scause = \n\0");
+        priority_print_int(scause, 2);
+        error_msg_terminate("Unknown interrupt\n\0", sepc);
     }
-    Riscv::w_sstatus(sstatus);
-    Riscv::w_sepc(sepc);
+    w_sstatus(sstatus);
+    w_sepc(sepc);
 }

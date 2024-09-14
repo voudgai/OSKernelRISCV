@@ -7,7 +7,7 @@ public:
     static bool isThereAnythingToPrint() { return (headPrint - tailPrint) != 0; }
     static void putter_wrapper(void *);
     static void getter_wrapper(void *);
-    static void PRINT_CONSOLE_IN_EMERGENCY();
+    static void empty_console_print_all(); // empties consoles buffer for printing
 
 private:
     _console() = delete;
@@ -30,10 +30,6 @@ private:
     static char bufferGet[NUM_OF_CHARS];
 
     static _sem *characterReadyToGet;
-    /*static _sem *semTransfer;
-    static _sem *semPut;
-    static _sem *semReceive;
-    static _sem *semGet;*/
 
     enum TERMINAL_STATUS_CHECKERS
     {
@@ -44,8 +40,8 @@ private:
     static void setConsoleInterrupt(bool value) { consoleInterrupt = value; }
     static bool isConsoleInterrupt() { return consoleInterrupt; }
 
-    static inline bool checkTerminalReceive();
-    static inline bool checkTerminalTransfer();
+    static inline bool receiveReady();  // CPU can receive from terminal
+    static inline bool transferReady(); // CPU can transfer to terminal
 
     static inline void putCharInTerminal(char ch);
     static inline char getCharFromTerminal();
@@ -81,17 +77,16 @@ inline char _console::getCharFromBuffer()
     return ch;
 }
 
-inline bool _console::checkTerminalReceive()
+inline bool _console::receiveReady()
 {
     init();
     uint8 console_status = *((char *)consoleStatusAddr);
-    /*__asm__("lb %[status], (%[statusAdr])\n": [status] "=r"(console_status): [statusAdr] "r"(consoleStatusAddr));*/
 
     console_status &= CONSOLE_STATUS_RECEIVE;
     return console_status != 0; // returns true if I can receive char
 }
 
-inline bool _console::checkTerminalTransfer()
+inline bool _console::transferReady()
 {
     init();
     uint8 console_status = *((char *)consoleStatusAddr);
@@ -129,11 +124,6 @@ inline void _console::init()
     tailGet = 0;
 
     characterReadyToGet = new _sem(0);
-
-    // mutexInt = new _sem(1);
-    /*semPut = new _sem(NUM_OF_CHARS);
-    semReceive = new _sem(NUM_OF_CHARS);
-    semGet = new _sem(0);*/
 
     initialized = true;
 }

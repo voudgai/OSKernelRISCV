@@ -46,11 +46,11 @@ void _console::getter_wrapper(void *p)
         character_getter_thread(p);
     }
 }
-void _console::PRINT_CONSOLE_IN_EMERGENCY()
+void _console::empty_console_print_all()
 {
     while (headPrint != tailPrint)
     {
-        if (checkTerminalTransfer() == true)
+        if (transferReady())
         {
             char ch = bufferPrint[tailPrint];
             tailPrint = (tailPrint + 1) % NUM_OF_CHARS;
@@ -65,7 +65,7 @@ void _console::character_putter_thread(void *)
     init();
     while (true)
     {
-        while (checkTerminalTransfer() == true &&
+        while (transferReady() &&
                headPrint != tailPrint)
         {
             char ch = bufferPrint[tailPrint];
@@ -74,8 +74,8 @@ void _console::character_putter_thread(void *)
             putCharInTerminal(ch);
         }
 
-        if (checkTerminalReceive() == false &&
-            checkTerminalTransfer() == false &&
+        if (!receiveReady() &&
+            !transferReady() &&
             isConsoleInterrupt())
         {
             setConsoleInterrupt(false); // if there was interrupt and the job is done,
@@ -90,7 +90,7 @@ void _console::character_getter_thread(void *)
     init();
     while (true)
     {
-        while (checkTerminalReceive() == true &&
+        while (receiveReady() &&
                isConsoleInterrupt() &&
                headGet + 1 != tailGet)
         {
@@ -100,8 +100,8 @@ void _console::character_getter_thread(void *)
             sem_signal(characterReadyToGet);
         }
 
-        if (checkTerminalReceive() == false &&
-            checkTerminalTransfer() == false &&
+        if (!receiveReady() &&
+            !transferReady() &&
             isConsoleInterrupt())
         {
             setConsoleInterrupt(false); // if there was interrupt and the job is done,

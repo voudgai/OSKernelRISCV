@@ -77,24 +77,6 @@ public:
     // write register sstatus
     static void w_sstatus(uint64 sstatus);
 
-    // // read any register
-    // inline static uint64 read_register(const char *reg_name);
-    // inline static void write_register(const char *reg_name, uint64 value);
-    // inline static uint64 read_memory_with_index(uint64 *base, uint64 index, uint8 wordSizeInBytes)
-    // {
-    //     uint64_t value;
-    //     asm volatile("ld %0, %1(%2)"
-    //                  : "=r"(value)
-    //                  : "r"(index * wordSizeInBytes), "r"(base));
-    //     return value;
-    // }
-    // inline static void write_memory_with_index(uint64 *base, uint64 index, , uint8 wordSizeInBytes, uint64 value)
-    // {
-    //     asm volatile("sd %0, %1(%2)"
-    //                  :
-    //                  : "r"(value), "r"(index * wordSizeInBytes), "r"(base));
-    // }
-
     enum trapType : unsigned long
     {
         ECALL_U = 0x0000000000000008UL,
@@ -127,9 +109,9 @@ public:
         GETC = 0x41,
         PUTC = 0x42,
 
-        GET_THREAD_ID = 0x51,
-        MODIFICATION = 0x61
+        GET_THREAD_ID = 0x51
     };
+
     // supervisor trap
     static void supervisorTrap();
 
@@ -140,16 +122,16 @@ public:
     static void killQEMU();
 
 private:
+    // supervisor trap handler
+    static void handleSupervisorTrap(unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
     static uint64 SYS_TIME;
     static inline void incSysTime(uint64 i = 1) { SYS_TIME += i; }
 
-    // supervisor trap handler
-    static void handleSupervisorTrap();
-
-    // error printer in S mode
-    inline static void error_printer(const char *s);
-    inline static void error_printInt(int xx, int base = 10, int sgn = 0);
-    inline static void error_print_stack_trace(uint depth, uint64 sepc);
+    // error printer in Supervisor mode
+    inline static void priority_print(const char *s);
+    inline static void priority_print_int(int xx, int base = 10, int sgn = 0);
+    inline static void print_stack_trace(uint depth, uint64 sepc);
+    inline static void error_msg_terminate(const char *s, volatile uint64 sepc);
     static constexpr uint STACK_TRACE_DEPTH = 1;
 
     static inline void mem_alloc_wrapper();
@@ -166,23 +148,7 @@ private:
     static inline void time_sleep_wrapper();
     static inline void putc_wrapper();
     static inline void getc_wrapper();
-
-    static inline void modification_wrapper();
-
-    static inline void default_case_wrapper(int sepc);
 };
-
-// inline uint64 Riscv::read_register(const char *reg_name)
-// {
-//     volatile uint64 value;
-//     asm volatile("mv %0, %1" : "=r"(value) : "r"(reg_name));
-//     return value;
-// }
-
-// inline void Riscv::write_register(const char *reg_name, uint64 value)
-// {
-//     asm volatile("mv %0, %1" : "=r"(reg_name) : "r"(value));
-// }
 
 inline uint64 Riscv::r_scause()
 {
@@ -276,12 +242,12 @@ inline void Riscv::w_sstatus(uint64 sstatus)
     __asm__ volatile("csrw sstatus, %[sstatus]" : : [sstatus] "r"(sstatus));
 }
 
-inline void Riscv::error_printer(const char *s)
+inline void Riscv::priority_print(const char *s)
 {
     int i = 0;
     while (s[i] != '\0')
     {
-        if (_console::checkTerminalTransfer() == true /*&& _console::isConsoleInterrupt()*/)
+        if (_console::transferReady())
         {
             _console::putCharInTerminal(s[i]);
             i++;
@@ -291,7 +257,7 @@ inline void Riscv::error_printer(const char *s)
     plic_complete(0xa);
 }
 
-inline void Riscv::error_printInt(int xx, int base, int sgn)
+inline void Riscv::priority_print_int(int xx, int base, int sgn)
 {
     char digits[] = "0123456789abcdef";
     char buf[16];
@@ -323,7 +289,7 @@ inline void Riscv::error_printInt(int xx, int base, int sgn)
     plic_complete(0xa);
 }
 
-inline void Riscv::error_print_stack_trace(uint depth, uint64 sepc)
+inline void Riscv::print_stack_trace(uint depth, uint64 sepc)
 {
     static int recursionCounter = 0;
     if (recursionCounter++ > 3)
@@ -335,27 +301,34 @@ inline void Riscv::error_print_stack_trace(uint depth, uint64 sepc)
     // Dobijanje trenutnog frame pointer-a
     __asm__ volatile("mv %0, fp" : "=r"(framePointer));
 
-    error_printer("-\n-Stack trace :\n ");
+    priority_print("-\n-Stack trace :\n ");
 
-    error_printer(" Current SEPC: 0x");
-    error_printInt(sepc, 16, 0);
-    error_printer("\n");
+    priority_print(" Current SEPC: 0x");
+    priority_print_int(sepc, 16, 0);
+    priority_print("\n");
 
     for (uint i = 0; i < depth && returnAddress; i++)
     {
         // Dobijanje povratne adrese
         __asm__ volatile("ld %0, 8(%1)" : "=r"(returnAddress) : "r"(framePointer));
 
-        error_printer("   Call address: 0x");
-        error_printInt(returnAddress, 16, 0);
-        error_printer(" (-4)\n");
+        priority_print("   Call address: 0x");
+        priority_print_int(returnAddress, 16, 0);
+        priority_print(" (-4)\n");
 
         // Dobijanje sledećeg frame pointer-a
         __asm__ volatile("ld %0, 0(%1)" : "=r"(framePointer) : "r"(framePointer));
     }
-    error_printer("---------------------------------------\n");
+    priority_print("---------------------------------------\n");
 
     recursionCounter--;
+}
+
+inline void Riscv::error_msg_terminate(const char *s, uint64 sepc)
+{
+    priority_print(s);
+    print_stack_trace(STACK_TRACE_DEPTH, sepc);
+    killQEMU();
 }
 
 inline void Riscv::mem_alloc_wrapper()
@@ -520,39 +493,11 @@ inline void Riscv::getc_wrapper()
     __asm__ volatile("sb %[result], 10 * 8(fp)" : : [result] "r"(result));
 }
 
-inline void Riscv::modification_wrapper()
-{
-    uint64 param1;
-    uint64 param2;
-    uint64 param3;
-    uint64 param4;
-    uint64 param5;
-    __asm__ volatile("ld %[param], 11 * 8(fp)" : [param] "=r"(param1));
-    __asm__ volatile("ld %[param], 12 * 8(fp)" : [param] "=r"(param2));
-    __asm__ volatile("ld %[param], 13 * 8(fp)" : [param] "=r"(param3));
-    __asm__ volatile("ld %[param], 14 * 8(fp)" : [param] "=r"(param4));
-    __asm__ volatile("ld %[param], 15 * 8(fp)" : [param] "=r"(param5));
-
-    uint64 volatile result = 0;
-
-    __asm__ volatile("sb %[result], 10 * 8(fp)" : : [result] "r"(result));
-}
-
-inline void Riscv::default_case_wrapper(int sepc)
-{
-    Riscv::error_printer("Unknown ECALL TrapCode!\n");
-    error_print_stack_trace(STACK_TRACE_DEPTH, sepc);
-    killQEMU();
-    volatile int waiter = 1;
-    while (waiter)
-        ;
-}
-
 inline void Riscv::killQEMU()
 {
-    _console::PRINT_CONSOLE_IN_EMERGENCY();
+    _console::empty_console_print_all();
 
-    error_printer("\nKernel finished! :)\n\n");
+    priority_print("\nKernel finished! :)\n\n");
 
     __asm__(
         "li t0, 0x5555\n"   // Učitajte 32-bitnu vrednost 0x5555 u registar t0
