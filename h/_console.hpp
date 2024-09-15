@@ -106,10 +106,14 @@ inline char _console::getCharFromTerminal()
     init();
     char ch = *((char *)consoleReceiveAddr);
 
-    while (!transferReady())
-        ; // there can be some probems with synch since this can get preempted
-          // but chances are small and consequences are non relevant
-    putCharInTerminal(ch);
+    if (ch >= 33 && ch <= 126) // only printable characters
+    {
+        while (!transferReady())
+            ; // there can be some probems with sync since this can get preempted
+              // but chances are small and consequences are non relevant
+        putCharInTerminal(ch);
+    }
+
     return ch;
 }
 
