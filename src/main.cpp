@@ -1,5 +1,5 @@
-#include "../h/riscv.hpp"
-#include "../h/memoryAllocator.hpp"
+#include "../h/_riscV.hpp"
+#include "../h/_memoryAllocator.hpp"
 #include "../h/syscall_c.h"
 #include "../h/_thread.hpp"
 
@@ -18,7 +18,7 @@ extern void idleThread(void *p);
 
 int main()
 {
-    Riscv::w_stvec((uint64)&Riscv::supervisorTrap); // setting up function to call upon interruption
+    _riscV::w_stvec((uint64)&_riscV::supervisorTrap); // setting up function to call upon interruption
 
     _thread *main_thread, *putc_thread, *getc_thread, *idle_thread;
 
@@ -37,6 +37,6 @@ int main()
 
     thread_dispatch();
 
-    Riscv::killQEMU();
+    _riscV::killQEMU();
     return 0;
 }

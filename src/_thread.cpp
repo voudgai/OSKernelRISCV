@@ -2,7 +2,7 @@
 // Created by os on 5/14/24.
 //
 #include "../h/_thread.hpp"
-#include "../h/riscv.hpp"
+#include "../h/_riscV.hpp"
 #include "../h/syscall_c.h"
 
 _thread *_thread::running = nullptr;
@@ -15,10 +15,10 @@ uint64 _thread::numOfSystemThreads = 0;
 void _thread::priority_print(const char *s)
 {
     _console::empty_console_print_all();
-    Riscv::priority_print("T_");
-    Riscv::priority_print_int(myID);
-    Riscv::priority_print(" : ");
-    Riscv::priority_print(s);
+    _riscV::priority_print("T_");
+    _riscV::priority_print_int(myID);
+    _riscV::priority_print(" : ");
+    _riscV::priority_print(s);
 }
 
 _thread *_thread::createThread(Body body, void *arg, uint64 *stack_space)
@@ -28,7 +28,7 @@ _thread *_thread::createThread(Body body, void *arg, uint64 *stack_space)
 
 void _thread::threadWrapper()
 {
-    Riscv::popSppSpieChangeMod();
+    _riscV::popSppSpieChangeMod();
     running->body(running->arg);
     thread_exit();
 }
@@ -65,10 +65,10 @@ void _thread::dispatch() // in dispatch(), if thread is finished, it frees its m
     running = Scheduler::get();
     running->threadState = RUNNING;
 
-    Riscv::pushRegisters();
+    _riscV::pushRegisters();
     contextSwitch(&old->context, &running->context); // yes, old thread context memory may be freed,
                                                      // but we are still in supervisor mode so nobody will get chance to use it
-    Riscv::popRegisters();
+    _riscV::popRegisters();
 }
 
 bool _thread::threadDEAD(_thread *thr, void *ptr)
@@ -81,7 +81,7 @@ void _thread::disableThread()
     if (!isThreadValid(this))
         return; // already disabled
     myMagicNumber = THREAD_DUMP_MAGIC_NUMBER;
-    memoryAllocator::_kmfree(stack);
+    _memoryAllocator::_kmfree(stack);
 }
 
 void _thread::deleteThread_inDispatch(_thread *thr, void *systemTimePtr)
@@ -102,7 +102,7 @@ void _thread::deleteThread_inDispatch(_thread *thr, void *systemTimePtr)
 void _thread::putThreadToSleep(uint64 timeForSleeping)
 {
     running->threadState = SUSPENDED;
-    running->timeForWakingUp = Riscv::getSystemTime() + timeForSleeping;
+    running->timeForWakingUp = _riscV::getSystemTime() + timeForSleeping;
     numOfThreadsAsleep++;
 
     listAsleepThreads.insert_sorted(running, smallerSleepTime, nullptr);
@@ -120,7 +120,7 @@ void _thread::wakeAsleepThreads()
 
 bool _thread::shouldWakeUpThread(_thread *thr, void *systemTimePtr)
 {
-    return (thr->timeForWakingUp <= Riscv::getSystemTime());
+    return (thr->timeForWakingUp <= _riscV::getSystemTime());
 }
 
 void _thread::wakeThreadUp(_thread *thr, void *ptr)

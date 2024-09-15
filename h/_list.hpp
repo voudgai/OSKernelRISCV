@@ -1,7 +1,7 @@
 #ifndef LIST_HPP
 #define LIST_HPP
 
-#include "memoryAllocator.hpp"
+#include "_memoryAllocator.hpp"
 
 template <typename T>
 class _list
@@ -60,15 +60,15 @@ public:
 //     {
 //         Elem *temp = head;
 //         head = head->next;
-//         memoryAllocator::_kmfree(temp);
+//         _memoryAllocator::_kmfree(temp);
 //     }
 // }
 
 template <typename T>
 void _list<T>::addFirst(T *data)
 {
-    size_t numOfBlocks = (memoryAllocator::SIZE_HEADER + sizeof(Elem) + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE;
-    Elem *elem = (Elem *)(memoryAllocator::_kmalloc(numOfBlocks));
+    size_t numOfBlocks = (_memoryAllocator::SIZE_HEADER + sizeof(Elem) + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE;
+    Elem *elem = (Elem *)(_memoryAllocator::_kmalloc(numOfBlocks));
     elem->data = data;
     elem->next = head;
 
@@ -82,8 +82,8 @@ void _list<T>::addFirst(T *data)
 template <typename T>
 void _list<T>::addLast(T *data)
 {
-    size_t numOfBlocks = (memoryAllocator::SIZE_HEADER + sizeof(Elem) + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE;
-    Elem *elem = (Elem *)(memoryAllocator::_kmalloc(numOfBlocks));
+    size_t numOfBlocks = (_memoryAllocator::SIZE_HEADER + sizeof(Elem) + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE;
+    Elem *elem = (Elem *)(_memoryAllocator::_kmalloc(numOfBlocks));
     elem->data = data;
     elem->next = nullptr;
 
@@ -114,7 +114,7 @@ T *_list<T>::removeFirst()
     }
 
     T *ret = elem->data;
-    memoryAllocator::_kmfree(elem);
+    _memoryAllocator::_kmfree(elem);
     return ret;
 }
 
@@ -150,7 +150,7 @@ T *_list<T>::removeLast()
     }
 
     T *ret = elem->data;
-    memoryAllocator::_kmfree(elem);
+    _memoryAllocator::_kmfree(elem);
     return ret;
 }
 
@@ -173,7 +173,7 @@ bool _list<T>::removeSpec(T *ptr)
             if (curr == tail)
                 tail = prev;
 
-            memoryAllocator::_kmfree(curr);
+            _memoryAllocator::_kmfree(curr);
             return true;
         }
     }
@@ -201,8 +201,8 @@ void _list<T>::insert_sorted(T *data, compareFunc cmp, void *aux)
         curr = prev->next;
     }
 
-    size_t numOfBlocks = (memoryAllocator::SIZE_HEADER + sizeof(Elem) + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE;
-    Elem *elem = (Elem *)(memoryAllocator::_kmalloc(numOfBlocks));
+    size_t numOfBlocks = (_memoryAllocator::SIZE_HEADER + sizeof(Elem) + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE;
+    Elem *elem = (Elem *)(_memoryAllocator::_kmalloc(numOfBlocks));
     elem->data = data;
     elem->next = curr;
 

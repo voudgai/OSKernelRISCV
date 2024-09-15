@@ -1,6 +1,6 @@
 
 #include "../h/syscall_c.h"
-#include "../h/memoryAllocator.hpp"
+#include "../h/_memoryAllocator.hpp"
 #include "../h/_thread.hpp"
 #include "../h/_sem.hpp"
 #include "../lib/console.h"
@@ -10,7 +10,7 @@ void *mem_alloc(size_t size)
 {
     static const int volatile trapCode = 0x01;
 
-    size_t volatile numOfBlocks = (memoryAllocator::SIZE_HEADER + size + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE;
+    size_t volatile numOfBlocks = (_memoryAllocator::SIZE_HEADER + size + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE;
 
     __asm__ volatile("mv a0, %[trapCode]" : : [trapCode] "r"(trapCode));
     __asm__ volatile("mv a1, %[numOfBlocks]" : : [numOfBlocks] "r"(numOfBlocks));

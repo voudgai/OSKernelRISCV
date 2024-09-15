@@ -14,7 +14,7 @@ private:
     static void inline init();
     static void character_putter_thread(void *);
     static void character_getter_thread(void *);
-    friend class Riscv;
+    friend class _riscV;
 
     static inline int putCharInBuffer(char ch);
     static inline char getCharFromBuffer();

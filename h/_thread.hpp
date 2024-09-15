@@ -2,16 +2,16 @@
 // Created by marko on 20.4.22..
 //
 
-#ifndef OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_TCB_HPP
-#define OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_TCB_HPP
+#ifndef OS1_VEZBE07__riscV_CONTEXT_SWITCH_2_INTERRUPT_TCB_HPP
+#define OS1_VEZBE07__riscV_CONTEXT_SWITCH_2_INTERRUPT_TCB_HPP
 
 #include "../lib/hw.h"
-#include "scheduler.hpp"
-#include "memoryAllocator.hpp"
+#include "_scheduler.hpp"
+#include "_memoryAllocator.hpp"
 #include "_sem.hpp"
 
 class _sem;
-class Riscv;
+class _riscV;
 // Thread Control Block
 class _thread
 {
@@ -21,19 +21,19 @@ class _thread
 public:
     static inline bool isThreadValid(const _thread *thr) { return (thr && THREAD_MAGIC_NUMBER == thr->myMagicNumber); }
 
-    void *operator new(size_t n) { return memoryAllocator::_kmalloc((memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
-    void *operator new[](size_t n) { return memoryAllocator::_kmalloc((memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
+    void *operator new(size_t n) { return _memoryAllocator::_kmalloc((_memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
+    void *operator new[](size_t n) { return _memoryAllocator::_kmalloc((_memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
 
-    void operator delete(void *p) noexcept { memoryAllocator::_kmfree(p); }
-    void operator delete[](void *p) noexcept { memoryAllocator::_kmfree(p); }
+    void operator delete(void *p) noexcept { _memoryAllocator::_kmfree(p); }
+    void operator delete[](void *p) noexcept { _memoryAllocator::_kmfree(p); }
 
-    friend class Riscv;
+    friend class _riscV;
     friend class _sem;
 
     ~_thread()
     {
         priority_print("~dst\n");
-        // memoryAllocator::_kmfree((void *)stack); //doing it in disableThread()
+        // _memoryAllocator::_kmfree((void *)stack); //doing it in disableThread()
         disableThread();
     }
 
@@ -167,4 +167,4 @@ private:
     // while threadDEAD do deleteThread_inDispatch
 };
 
-#endif // OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_TCB_HPP
+#endif // OS1_VEZBE07__riscV_CONTEXT_SWITCH_2_INTERRUPT_TCB_HPP

@@ -1,13 +1,13 @@
 
-#ifndef OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_RISCV_HPP
-#define OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_RISCV_HPP
+#ifndef OS1_VEZBE07__riscV_CONTEXT_SWITCH_2_INTERRUPT__riscV_HPP
+#define OS1_VEZBE07__riscV_CONTEXT_SWITCH_2_INTERRUPT__riscV_HPP
 
 #include "../lib/hw.h"
 #include "_thread.hpp"
 #include "_sem.hpp"
 #include "_console.hpp"
 
-class Riscv
+class _riscV
 {
     friend class _thread;
 
@@ -154,99 +154,99 @@ private:
     static inline uint64 getc_wrapper();
 };
 
-inline uint64 Riscv::r_scause()
+inline uint64 _riscV::r_scause()
 {
     uint64 volatile scause;
     __asm__ volatile("csrr %[scause], scause" : [scause] "=r"(scause));
     return scause;
 }
 
-inline void Riscv::w_scause(uint64 scause)
+inline void _riscV::w_scause(uint64 scause)
 {
     __asm__ volatile("csrw scause, %[scause]" : : [scause] "r"(scause));
 }
 
-inline uint64 Riscv::r_sepc()
+inline uint64 _riscV::r_sepc()
 {
     uint64 volatile sepc;
     __asm__ volatile("csrr %[sepc], sepc" : [sepc] "=r"(sepc));
     return sepc;
 }
 
-inline void Riscv::w_sepc(uint64 sepc)
+inline void _riscV::w_sepc(uint64 sepc)
 {
     __asm__ volatile("csrw sepc, %[sepc]" : : [sepc] "r"(sepc));
 }
 
-inline uint64 Riscv::r_stvec()
+inline uint64 _riscV::r_stvec()
 {
     uint64 volatile stvec;
     __asm__ volatile("csrr %[stvec], stvec" : [stvec] "=r"(stvec));
     return stvec;
 }
 
-inline void Riscv::w_stvec(uint64 stvec)
+inline void _riscV::w_stvec(uint64 stvec)
 {
     __asm__ volatile("csrw stvec, %[stvec]" : : [stvec] "r"(stvec));
 }
 
-inline uint64 Riscv::r_stval()
+inline uint64 _riscV::r_stval()
 {
     uint64 volatile stval;
     __asm__ volatile("csrr %[stval], stval" : [stval] "=r"(stval));
     return stval;
 }
 
-inline void Riscv::w_stval(uint64 stval)
+inline void _riscV::w_stval(uint64 stval)
 {
     __asm__ volatile("csrw stval, %[stval]" : : [stval] "r"(stval));
 }
 
-inline void Riscv::ms_sip(uint64 mask)
+inline void _riscV::ms_sip(uint64 mask)
 {
     __asm__ volatile("csrs sip, %[mask]" : : [mask] "r"(mask));
 }
 
-inline void Riscv::mc_sip(uint64 mask)
+inline void _riscV::mc_sip(uint64 mask)
 {
     __asm__ volatile("csrc sip, %[mask]" : : [mask] "r"(mask));
 }
 
-inline uint64 Riscv::r_sip()
+inline uint64 _riscV::r_sip()
 {
     uint64 volatile sip;
     __asm__ volatile("csrr %[sip], sip" : [sip] "=r"(sip));
     return sip;
 }
 
-inline void Riscv::w_sip(uint64 sip)
+inline void _riscV::w_sip(uint64 sip)
 {
     __asm__ volatile("csrw sip, %[sip]" : : [sip] "r"(sip));
 }
 
-inline void Riscv::ms_sstatus(uint64 mask)
+inline void _riscV::ms_sstatus(uint64 mask)
 {
     __asm__ volatile("csrs sstatus, %[mask]" : : [mask] "r"(mask));
 }
 
-inline void Riscv::mc_sstatus(uint64 mask)
+inline void _riscV::mc_sstatus(uint64 mask)
 {
     __asm__ volatile("csrc sstatus, %[mask]" : : [mask] "r"(mask));
 }
 
-inline uint64 Riscv::r_sstatus()
+inline uint64 _riscV::r_sstatus()
 {
     uint64 volatile sstatus;
     __asm__ volatile("csrr %[sstatus], sstatus" : [sstatus] "=r"(sstatus));
     return sstatus;
 }
 
-inline void Riscv::w_sstatus(uint64 sstatus)
+inline void _riscV::w_sstatus(uint64 sstatus)
 {
     __asm__ volatile("csrw sstatus, %[sstatus]" : : [sstatus] "r"(sstatus));
 }
 
-inline void Riscv::priority_print(const char *s)
+inline void _riscV::priority_print(const char *s)
 {
     int i = 0;
     while (s[i] != '\0')
@@ -261,7 +261,7 @@ inline void Riscv::priority_print(const char *s)
     plic_complete(0xa);
 }
 
-inline void Riscv::priority_print_int(int xx, int base, int sgn)
+inline void _riscV::priority_print_int(int xx, int base, int sgn)
 {
     char digits[] = "0123456789abcdef";
     char buf[16];
@@ -295,7 +295,7 @@ inline void Riscv::priority_print_int(int xx, int base, int sgn)
     plic_complete(0xa);
 }
 
-inline void Riscv::print_stack_trace(uint depth, uint64 sepc)
+inline void _riscV::print_stack_trace(uint depth, uint64 sepc)
 {
     static int recursionCounter = 0;
     if (recursionCounter++ > 3)
@@ -330,49 +330,49 @@ inline void Riscv::print_stack_trace(uint depth, uint64 sepc)
     recursionCounter--;
 }
 
-inline void Riscv::error_msg_terminate(const char *s, uint64 sepc)
+inline void _riscV::error_msg_terminate(const char *s, uint64 sepc)
 {
     priority_print(s);
     print_stack_trace(STACK_TRACE_DEPTH, sepc);
     killQEMU();
 }
 
-inline uint64 Riscv::mem_alloc_wrapper(uint64 numOfBlocks)
+inline uint64 _riscV::mem_alloc_wrapper(uint64 numOfBlocks)
 {
-    return (uint64)memoryAllocator::_kmalloc(numOfBlocks);
+    return (uint64)_memoryAllocator::_kmalloc(numOfBlocks);
 }
 
-inline uint64 Riscv::mem_free_wrapper(void *ptr)
+inline uint64 _riscV::mem_free_wrapper(void *ptr)
 {
-    return memoryAllocator::_kmfree(ptr);
+    return _memoryAllocator::_kmfree(ptr);
 }
 
-inline uint64 Riscv::thread_create_wrapper(_thread **handle, Body body, void *arg, uint64 *stack_space)
+inline uint64 _riscV::thread_create_wrapper(_thread **handle, Body body, void *arg, uint64 *stack_space)
 {
     *handle = _thread::createThread(body, arg, stack_space);
     return (*handle != nullptr) ? 0 : -1;
 }
 //__asm__ volatile("mv %0, a1" : "=r" (handle));
 
-inline uint64 Riscv::thread_exit_wrapper()
+inline uint64 _riscV::thread_exit_wrapper()
 {
     _thread::exit();
     return -1;
 }
 
-inline uint64 Riscv::thread_dispatch_wrapper()
+inline uint64 _riscV::thread_dispatch_wrapper()
 {
     _thread::dispatch();
     return 0;
 }
 
-inline uint64 Riscv::sem_open_wrapper(_sem **handle, uint64 val)
+inline uint64 _riscV::sem_open_wrapper(_sem **handle, uint64 val)
 {
     *handle = new _sem(val);
     return (*handle == nullptr) ? -1 : 0;
 } //__asm__  volatile("mv a0, %[a]"::[a]"r"(result));
 
-inline uint64 Riscv::sem_close_wrapper(_sem *sem)
+inline uint64 _riscV::sem_close_wrapper(_sem *sem)
 {
     if (!sem)
         return -1;
@@ -381,7 +381,7 @@ inline uint64 Riscv::sem_close_wrapper(_sem *sem)
     return 0;
 }
 
-inline uint64 Riscv::sem_wait_wrapper(_sem *sem)
+inline uint64 _riscV::sem_wait_wrapper(_sem *sem)
 {
     if (!sem)
         return -1;
@@ -389,7 +389,7 @@ inline uint64 Riscv::sem_wait_wrapper(_sem *sem)
     return sem->wait();
 }
 
-inline uint64 Riscv::sem_signal_wrapper(_sem *sem)
+inline uint64 _riscV::sem_signal_wrapper(_sem *sem)
 {
     if (!sem)
         return -1;
@@ -397,7 +397,7 @@ inline uint64 Riscv::sem_signal_wrapper(_sem *sem)
     return sem->signal(); // 1 if signaled any thread, 0 if didnt
 }
 
-inline uint64 Riscv::sem_timedwait_wrapper(_sem *sem, uint64 maxTime)
+inline uint64 _riscV::sem_timedwait_wrapper(_sem *sem, uint64 maxTime)
 {
     if (!sem)
         return -1;
@@ -405,7 +405,7 @@ inline uint64 Riscv::sem_timedwait_wrapper(_sem *sem, uint64 maxTime)
     return sem->timedWait(maxTime);
 }
 
-inline uint64 Riscv::sem_trywait_wrapper(_sem *sem)
+inline uint64 _riscV::sem_trywait_wrapper(_sem *sem)
 {
     if (!sem)
         return -1;
@@ -413,7 +413,7 @@ inline uint64 Riscv::sem_trywait_wrapper(_sem *sem)
     return sem->tryWait();
 }
 
-inline uint64 Riscv::time_sleep_wrapper(uint64 timeForSleeping)
+inline uint64 _riscV::time_sleep_wrapper(uint64 timeForSleeping)
 {
 
     if (timeForSleeping > ((uint64)1 << 63))
@@ -423,17 +423,17 @@ inline uint64 Riscv::time_sleep_wrapper(uint64 timeForSleeping)
     return 0;
 }
 
-inline uint64 Riscv::getc_wrapper()
+inline uint64 _riscV::getc_wrapper()
 {
     return (uint64)_console::getCharFromBuffer();
 }
 
-inline uint64 Riscv::putc_wrapper(char c)
+inline uint64 _riscV::putc_wrapper(char c)
 {
     return _console::putCharInBuffer(c);
 }
 
-inline void Riscv::killQEMU()
+inline void _riscV::killQEMU()
 {
     _console::empty_console_print_all();
 
@@ -449,4 +449,4 @@ inline void Riscv::killQEMU()
     while (waiter)
         ;
 }
-#endif // OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_RISCV_HPP
+#endif // OS1_VEZBE07__riscV_CONTEXT_SWITCH_2_INTERRUPT__riscV_HPP

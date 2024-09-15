@@ -6,10 +6,11 @@
 extern const void *HEAP_START_ADDR, *HEAP_END_ADDR;
 extern const size_t MEM_BLOCK_SIZE;
 // 64 <= MEM_BLOCK_SIZE <= 1024
-class memoryAllocator
+
+class _memoryAllocator
 {
 public:
-    memoryAllocator() = delete;
+    _memoryAllocator() = delete;
     static constexpr uint64 SIZE_HEADER = 2 * 8;
 
     static void *_kmalloc(size_t numOfBlocks);

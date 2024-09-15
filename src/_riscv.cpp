@@ -1,12 +1,12 @@
 
-#include "../h/riscv.hpp"
+#include "../h/_riscV.hpp"
 #include "../lib/console.h"
-#include "../h/memoryAllocator.hpp"
+#include "../h/_memoryAllocator.hpp"
 #include "../h/syscall_cpp.hpp"
 class Console;
-uint64 Riscv::SYS_TIME = 0;
+uint64 _riscV::SYS_TIME = 0;
 
-void Riscv::handleSupervisorTrap(uint64 a0, uint64 a1, uint64 a2, uint64 a3, uint64 a4, uint64 a5)
+void _riscV::handleSupervisorTrap(uint64 a0, uint64 a1, uint64 a2, uint64 a3, uint64 a4, uint64 a5)
 // called from supervisorTrap() for ECall handling, a0-a5 are registers
 {
     uint64 volatile scause = r_scause();
@@ -122,7 +122,7 @@ void Riscv::handleSupervisorTrap(uint64 a0, uint64 a1, uint64 a2, uint64 a3, uin
     w_sepc(sepc);
 }
 
-void Riscv::popSppSpieChangeMod()
+void _riscV::popSppSpieChangeMod()
 {
     mc_sstatus(SSTATUS_SPP);           // set previous privilege to 0 (user regime)
     __asm__ volatile("csrw sepc, ra"); // set sepc to return adress

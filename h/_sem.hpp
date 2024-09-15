@@ -5,24 +5,24 @@
 #ifndef PROJECT_FOR_REAL__SEM_HPP
 #define PROJECT_FOR_REAL__SEM_HPP
 
-#include "memoryAllocator.hpp"
+#include "_memoryAllocator.hpp"
 #include "_list.hpp"
 
 class _thread;
 class _sem
 {
 public:
-    friend class Riscv;
+    friend class _riscV;
     friend class _thread;
-    void *operator new(size_t n) { return memoryAllocator::_kmalloc((memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
-    void *operator new[](size_t n) { return memoryAllocator::_kmalloc((memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
+    void *operator new(size_t n) { return _memoryAllocator::_kmalloc((_memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
+    void *operator new[](size_t n) { return _memoryAllocator::_kmalloc((_memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
 
     void operator delete(void *p) noexcept
     {
         // ((_sem *)(p))->~_sem();
-        memoryAllocator::_kmfree(p);
+        _memoryAllocator::_kmfree(p);
     }
-    void operator delete[](void *p) noexcept { memoryAllocator::_kmfree(p); }
+    void operator delete[](void *p) noexcept { _memoryAllocator::_kmfree(p); }
 
     explicit _sem(uint64 N = 1) : val(N)
     {

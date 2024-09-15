@@ -2,7 +2,7 @@
 // Created by os on 5/15/24.
 //
 #include "../h/_sem.hpp"
-#include "../h/riscv.hpp"
+#include "../h/_riscV.hpp"
 
 _list<_sem> _sem::allSemaphores;
 uint64 _sem::numOfAllSemaphores = 0;
@@ -70,7 +70,7 @@ void _sem::block()
 
 void _sem::timedBlock(uint64 maxTimeSleeping)
 {
-    uint64 timeForRelease = maxTimeSleeping + Riscv::getSystemTime();
+    uint64 timeForRelease = maxTimeSleeping + _riscV::getSystemTime();
 
     _thread *old = _thread::running;
 

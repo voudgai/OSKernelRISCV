@@ -1,12 +1,12 @@
-#include "../h/memoryAllocator.hpp"
+#include "../h/_memoryAllocator.hpp"
 
-void *memoryAllocator::headFree = (void *)(HEAP_START_ADDR);
+void *_memoryAllocator::headFree = (void *)(HEAP_START_ADDR);
 
-void *memoryAllocator::headTaken = nullptr;
+void *_memoryAllocator::headTaken = nullptr;
 
-uint64 memoryAllocator::totalBlocks = ((uint64)HEAP_END_ADDR - (uint64)HEAP_START_ADDR) / MEM_BLOCK_SIZE;
+uint64 _memoryAllocator::totalBlocks = ((uint64)HEAP_END_ADDR - (uint64)HEAP_START_ADDR) / MEM_BLOCK_SIZE;
 
-void memoryAllocator::init()
+void _memoryAllocator::init()
 {
     static bool initialazed = false;
 
@@ -25,7 +25,7 @@ void memoryAllocator::init()
     return;
 }
 
-void *memoryAllocator::_kmalloc(size_t numOfBlocks)
+void *_memoryAllocator::_kmalloc(size_t numOfBlocks)
 {
     init();
     if (numOfBlocks <= 0)
@@ -81,7 +81,7 @@ void *memoryAllocator::_kmalloc(size_t numOfBlocks)
     return (void *)((uint64)cur64 + SIZE_HEADER);
 }
 
-int memoryAllocator::_kmfree(void *toBeFreed)
+int _memoryAllocator::_kmfree(void *toBeFreed)
 {
     if (toBeFreed == nullptr)
         return 0;
@@ -147,7 +147,7 @@ int memoryAllocator::_kmfree(void *toBeFreed)
     return 0;
 }
 /*
-void memoryAllocator::printMemNOTINSYSCALL()
+void _memoryAllocator::printMemNOTINSYSCALL()
 {
     uint64 *cur64 = (uint64 *)headFree;
     printString("FreeMemory:\n");

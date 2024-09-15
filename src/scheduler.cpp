@@ -1,7 +1,7 @@
 //
 // Created by os on 5/14/24.
 //
-#include "../h/scheduler.hpp"
+#include "../h/_scheduler.hpp"
 
 _list<_thread> Scheduler::queueThreads;
 
