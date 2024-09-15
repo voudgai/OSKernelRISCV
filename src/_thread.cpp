@@ -10,6 +10,16 @@ uint64 _thread::timeSliceCounter = 0;
 List<_thread> _thread::listAsleepThreads;
 uint64 _thread::numOfThreadsAsleep = 0;
 uint64 _thread::ID = 0;
+uint64 _thread::numOfSystemThreads = 0;
+
+void _thread::priority_print(const char *s)
+{
+    _console::empty_console_print_all();
+    Riscv::priority_print("T_");
+    Riscv::priority_print_int(myID);
+    Riscv::priority_print(" : ");
+    Riscv::priority_print(s);
+}
 
 _thread *_thread::createThread(Body body, void *arg, uint64 *stack_space)
 {
@@ -25,33 +35,39 @@ void _thread::threadWrapper()
 
 void _thread::exit()
 {
+    if (running->parentThread)
+        running->parentThread->numOfChildren--;
     running->setFinished(true);
     dispatch(); // in dispatch(), if thread is finished, it frees its memory
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-bool _thread::readyToRun() { return !this->finished && !this->sleeping && !(this->semStatus == _sem::WAITING || this->semStatus == _sem::TIMEDWAITING); }
+bool _thread::readyToRun() { return threadState == READY || threadState == RUNNING; }
+//{ return !this->finished && !this->sleeping && !(this->semStatus == _sem::WAITING || this->semStatus == _sem::TIMEDWAITING); }
 
 void _thread::dispatch() // in dispatch(), if thread is finished, it frees its memory
 {
     resetTimeSliceCounter();
     _thread *old = running;
     if (old->readyToRun())
+    {
+        old->threadState = READY;
         Scheduler::put(old);
+    }
 
     if (old->isFinished())
     {
-        old->disableThread(); // moze da bude diskutabilno ponekad, PROVERITI!!!!!!!!!!!!!
         delete old;
     }
 
     Scheduler::queueThreads.foreachWhile(deleteThread_inDispatch, nullptr, threadDEAD, nullptr);
     running = Scheduler::get();
+    running->threadState = RUNNING;
 
     Riscv::pushRegisters();
-    _thread::contextSwitch(&old->context, &running->context); // yes, old thread context memory may be freed,
-                                                              // but we are still in supervisor mode so nobody will get chance to use it
+    contextSwitch(&old->context, &running->context); // yes, old thread context memory may be freed,
+                                                     // but we are still in supervisor mode so nobody will get chance to use it
     Riscv::popRegisters();
 }
 
@@ -77,7 +93,6 @@ void _thread::deleteThread_inDispatch(_thread *thr, void *systemTimePtr)
         isThreadValid(thr) &&
         thr->isFinished())
     {
-        thr->disableThread();
         delete thr;
     }
 }
@@ -86,15 +101,15 @@ void _thread::deleteThread_inDispatch(_thread *thr, void *systemTimePtr)
 
 void _thread::putThreadToSleep(uint64 timeForSleeping)
 {
-    _thread::running->sleeping = true;
-    _thread::running->timeForWakingUp = Riscv::getSystemTime() + timeForSleeping;
+    running->threadState = SUSPENDED;
+    running->timeForWakingUp = Riscv::getSystemTime() + timeForSleeping;
     numOfThreadsAsleep++;
 
-    listAsleepThreads.insert_sorted(_thread::running, smallerSleepTime, nullptr);
+    listAsleepThreads.insert_sorted(running, smallerSleepTime, nullptr);
     dispatch();
 
-    _thread::running->sleeping = false;
-    _thread::running->timeForWakingUp = 0;
+    running->threadState = READY;
+    running->timeForWakingUp = 0;
     numOfThreadsAsleep--;
 }
 

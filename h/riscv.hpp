@@ -9,6 +9,8 @@
 
 class Riscv
 {
+    friend class _thread;
+
 public:
     static inline uint64 getSystemTime() { return SYS_TIME; }
 

@@ -11,9 +11,11 @@
 #include "_sem.hpp"
 
 class _sem;
+class Riscv;
 // Thread Control Block
 class _thread
 {
+    void priority_print(const char *s);
     using Body = void (*)(void *);
 
 public:
@@ -28,13 +30,30 @@ public:
     friend class Riscv;
     friend class _sem;
 
-    ~_thread() { disableThread(); }
+    ~_thread()
+    {
+        priority_print("~dst\n");
+        // memoryAllocator::_kmfree((void *)stack); //doing it in disableThread()
+        disableThread();
+    }
 
-    inline bool isFinished() const { return finished || isThreadValid(this) == false; }
-    inline void setFinished(bool value) { finished = value; }
+    inline bool isFinished() const { return isThreadValid(this) == false || threadState == FINISHED; }
+    inline void setFinished(bool value) { threadState = (value) ? FINISHED : threadState; }
 
     inline _sem::threadsSemStatus getThreadsSemStatus() const { return semStatus; }
-    inline void setThreadsSemStatus(_sem::threadsSemStatus status) { semStatus = status; }
+    inline void setThreadsSemStatus(_sem::threadsSemStatus status)
+    {
+        semStatus = status;
+        if (semStatus == _sem::WAITING || semStatus == _sem::TIMEDWAITING)
+            threadState = SUSPENDED;
+        else if (isFinished() == false)
+        {
+            if (running == this)
+                threadState = RUNNING;
+            else
+                threadState = READY;
+        }
+    }
 
     inline uint64 getTimeSlice() const { return timeSlice; }
 
@@ -64,8 +83,15 @@ private:
             running = this;
         }
 
-        myID = ID++;
+        myID = ++ID;
         myMagicNumber = THREAD_MAGIC_NUMBER;
+
+        if (body == nullptr || (parentThread && parentThread->body == nullptr)) // either its main or its made by main (main has body == nullptr)
+        {
+            numOfSystemThreads++;
+            // priority_print(" one more kernel thread.\n\n");
+        }
+        // else{// priority_print(" one more user thread.\n\n");}
     }
 
     enum threadState : uint8
@@ -82,21 +108,19 @@ private:
         uint64 sp; // stack_pointer for this thread for context switch
     };
 
-    Body body;        // body of thread, function that thread will process
-    void *arg;        // argument for threads body
-    uint64 *stack;    // pointer to stack allocated for this thread
-    Context context;  // context of this thread, valueable for context switching
-    uint64 timeSlice; // how much time is this thread on CPU already
+    Body body = nullptr;     // body of thread, function that thread will process
+    void *arg = nullptr;     // argument for threads body
+    uint64 *stack = nullptr; // pointer to stack allocated for this thread
+    Context context;         // context of this thread, valueable for context switching
+    uint64 timeSlice = 0;    // how much time is this thread on CPU already
 
-    bool sleeping = false;
-    bool finished = false;
     threadState threadState = READY;
 
     uint64 myID;          // id of this thread
     uint64 myMagicNumber; // magic number, used to check if any pointer is actually a thread
 
-    _thread *parentThread;    // pointer to parent thread
-    uint64 numOfChildren = 0; // number of threads this thread made
+    _thread *parentThread = nullptr; // pointer to parent thread
+    uint64 numOfChildren = 0;        // number of threads this thread made
 
     _sem::threadsSemStatus semStatus = _sem::NON_WAITING; // semaphore status for this thread
     _sem *mySem = nullptr;                                // semaphore on which this thread is waiting
@@ -125,6 +149,7 @@ private:
     static uint64 constexpr TIME_SLICE = DEFAULT_TIME_SLICE;
 
     static uint64 ID;
+    static uint64 numOfSystemThreads;
 
     static constexpr uint64 THREAD_MAGIC_NUMBER = 0xf832d45809acdeef;
     static constexpr uint64 THREAD_DUMP_MAGIC_NUMBER = 0xacdcacdcacdcacdc;
