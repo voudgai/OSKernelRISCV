@@ -87,11 +87,7 @@ private:
         myMagicNumber = THREAD_MAGIC_NUMBER;
 
         if (body == nullptr || (parentThread && parentThread->body == nullptr)) // either its main or its made by main (main has body == nullptr)
-        {
             numOfSystemThreads++;
-            // priority_print(" one more kernel thread.\n\n");
-        }
-        // else{// priority_print(" one more user thread.\n\n");}
     }
 
     enum threadState : uint8
