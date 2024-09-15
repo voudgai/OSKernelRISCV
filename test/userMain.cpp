@@ -30,11 +30,40 @@
 
 #endif
 
+static void runOneTest();
+
 void userMain()
 {
-    printString("Unesite broj testa? [1-7]\n");
-    int test = getc() - '0';
-    getc(); // Enter posle broja
+    printString("How many tests would you like to run [1-9]? ");
+
+    int numTests = getc() - '0';
+    int errorCheck = getc(); // get the newline char
+    printString("\n\n");
+
+    if ((errorCheck != '\n' && errorCheck != 13) || numTests > 9)
+    {
+        printString("Invalid choice!\n");
+        return;
+    }
+
+    for (int i = 0; i < numTests; i++)
+    {
+        printString("\n--------------------------------------------------------------------------------\n \tRunning test number : ");
+        printInt(i + 1);
+        printString(" out of ");
+        printInt(numTests);
+        printString(".\n--------------------------------------------------------------------------------\n");
+
+        runOneTest();
+    }
+}
+
+static void runOneTest()
+{
+    int test = getTestID_printTestInfo();
+
+    if (test < 0)
+        return;
 
     if ((test >= 1 && test <= 2) || test == 7)
     {

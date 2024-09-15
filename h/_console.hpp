@@ -105,6 +105,11 @@ inline char _console::getCharFromTerminal()
 {
     init();
     char ch = *((char *)consoleReceiveAddr);
+
+    while (!transferReady())
+        ; // there can be some probems with synch since this can get preempted
+          // but chances are small and consequences are non relevant
+    putCharInTerminal(ch);
     return ch;
 }
 

@@ -32,8 +32,8 @@ public:
 
     ~_thread()
     {
-        priority_print("~dst\n");
-        // _memoryAllocator::_kmfree((void *)stack); //doing it in disableThread()
+        // priority_print("~dst\n");
+        //  _memoryAllocator::_kmfree((void *)stack); //doing it in disableThread()
         disableThread();
     }
 
