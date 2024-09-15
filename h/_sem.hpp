@@ -6,7 +6,7 @@
 #define PROJECT_FOR_REAL__SEM_HPP
 
 #include "memoryAllocator.hpp"
-#include "list.hpp"
+#include "_list.hpp"
 
 class _thread;
 class _sem
@@ -77,11 +77,11 @@ protected:
 
 private:
     volatile long int val;
-    List<_thread> queueBlocked; // queue of ALL blocked threads
+    _list<_thread> queueBlocked; // queue of ALL blocked threads
 
     volatile uint64 numOfTimedWaiting = 0; // just for statistics
 
-    static List<_sem> allSemaphores;  // UNUSED
+    static _list<_sem> allSemaphores; // UNUSED
     static uint64 numOfAllSemaphores; // UNUSED
 };
 

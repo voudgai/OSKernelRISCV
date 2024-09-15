@@ -4,7 +4,7 @@
 #include "memoryAllocator.hpp"
 
 template <typename T>
-class List
+class _list
 {
 private:
     using foreachFunc = void (*)(T *, void *);
@@ -27,10 +27,10 @@ private:
     Elem *mergeSort(Elem *head, compareFunc cmp, void *aux);
 
 public:
-    List() : head(nullptr), tail(nullptr) {}
+    _list() : head(nullptr), tail(nullptr) {}
 
-    List(const List<T> &other) = delete;
-    List<T> &operator=(const List<T> &other) = delete;
+    _list(const _list<T> &other) = delete;
+    _list<T> &operator=(const _list<T> &other) = delete;
 
     void foreach (foreachFunc func, void *aux); // for each element calls foreachFunc
 
@@ -54,7 +54,7 @@ public:
 };
 
 // template <typename T>
-// List<T>::~List()
+// _list<T>::~_list()
 // {
 //     while (head)
 //     {
@@ -65,7 +65,7 @@ public:
 // }
 
 template <typename T>
-void List<T>::addFirst(T *data)
+void _list<T>::addFirst(T *data)
 {
     size_t numOfBlocks = (memoryAllocator::SIZE_HEADER + sizeof(Elem) + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE;
     Elem *elem = (Elem *)(memoryAllocator::_kmalloc(numOfBlocks));
@@ -80,7 +80,7 @@ void List<T>::addFirst(T *data)
 }
 
 template <typename T>
-void List<T>::addLast(T *data)
+void _list<T>::addLast(T *data)
 {
     size_t numOfBlocks = (memoryAllocator::SIZE_HEADER + sizeof(Elem) + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE;
     Elem *elem = (Elem *)(memoryAllocator::_kmalloc(numOfBlocks));
@@ -99,7 +99,7 @@ void List<T>::addLast(T *data)
 }
 
 template <typename T>
-T *List<T>::removeFirst()
+T *_list<T>::removeFirst()
 {
     if (!head)
     {
@@ -119,13 +119,13 @@ T *List<T>::removeFirst()
 }
 
 template <typename T>
-T *List<T>::peekFirst() const
+T *_list<T>::peekFirst() const
 {
     return head ? head->data : nullptr;
 }
 
 template <typename T>
-T *List<T>::removeLast()
+T *_list<T>::removeLast()
 {
     if (!head)
     {
@@ -155,7 +155,7 @@ T *List<T>::removeLast()
 }
 
 template <typename T>
-bool List<T>::removeSpec(T *ptr)
+bool _list<T>::removeSpec(T *ptr)
 {
     if (!ptr)
         return false;
@@ -181,13 +181,13 @@ bool List<T>::removeSpec(T *ptr)
 }
 
 template <typename T>
-T *List<T>::peekLast() const
+T *_list<T>::peekLast() const
 {
     return tail ? tail->data : nullptr;
 }
 
 template <typename T>
-void List<T>::insert_sorted(T *data, compareFunc cmp, void *aux)
+void _list<T>::insert_sorted(T *data, compareFunc cmp, void *aux)
 {
     if (!data)
         return;
@@ -216,7 +216,7 @@ void List<T>::insert_sorted(T *data, compareFunc cmp, void *aux)
 }
 
 template <typename T>
-void List<T>::sort(compareFunc cmp, void *aux)
+void _list<T>::sort(compareFunc cmp, void *aux)
 {
     if (!head || !head->next)
         return;
@@ -231,7 +231,7 @@ void List<T>::sort(compareFunc cmp, void *aux)
 }
 
 template <typename T>
-typename List<T>::Elem *List<T>::mergeSort(Elem *head, compareFunc cmp, void *aux)
+typename _list<T>::Elem *_list<T>::mergeSort(Elem *head, compareFunc cmp, void *aux)
 {
     if (!head || !head->next)
         return head;
@@ -248,7 +248,7 @@ typename List<T>::Elem *List<T>::mergeSort(Elem *head, compareFunc cmp, void *au
 }
 
 template <typename T>
-typename List<T>::Elem *List<T>::getMiddle(Elem *head)
+typename _list<T>::Elem *_list<T>::getMiddle(Elem *head)
 {
     if (!head)
         return head;
@@ -270,7 +270,7 @@ typename List<T>::Elem *List<T>::getMiddle(Elem *head)
 }
 
 template <typename T>
-typename List<T>::Elem *List<T>::merge(Elem *left, Elem *right, compareFunc cmp, void *aux)
+typename _list<T>::Elem *_list<T>::merge(Elem *left, Elem *right, compareFunc cmp, void *aux)
 {
     if (!left)
         return right;
@@ -294,7 +294,7 @@ typename List<T>::Elem *List<T>::merge(Elem *left, Elem *right, compareFunc cmp,
 }
 
 template <typename T>
-void List<T>::foreach (List<T>::foreachFunc func, void *aux)
+void _list<T>::foreach (_list<T>::foreachFunc func, void *aux)
 {
     for (Elem *curr = head; curr; curr = curr->next)
     {
@@ -303,12 +303,12 @@ void List<T>::foreach (List<T>::foreachFunc func, void *aux)
 }
 
 template <typename T>
-void List<T>::foreachWhile(List<T>::foreachFunc func, void *auxFunc, List<T>::conditionFunc condition, void *auxCond)
+void _list<T>::foreachWhile(_list<T>::foreachFunc func, void *auxFunc, _list<T>::conditionFunc condition, void *auxCond)
 {
     for (Elem *curr = head; curr && condition(curr->data, auxCond); /*already going to next inside*/)
     {
         Elem *toCheck = curr;
-        curr = curr->next; // in case we remove it from the list inside of foreachFunc
+        curr = curr->next; // in case we remove it from the _list inside of foreachFunc
         func(toCheck->data, auxFunc);
     }
 }

@@ -2,7 +2,7 @@
 #define SCHEDULER_HPP
 
 // #include "syscall_c.hpp"
-#include "list.hpp"
+#include "_list.hpp"
 
 class _thread;
 class Scheduler
@@ -14,7 +14,7 @@ public:
     static _thread *get();
 
 private:
-    static List<_thread> queueThreads;
+    static _list<_thread> queueThreads;
 };
 
 #endif

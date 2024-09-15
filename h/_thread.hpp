@@ -132,7 +132,7 @@ private:
 
     static void putThreadToSleep(uint64 timeAsleep);
     static void wakeAsleepThreads();
-    static List<_thread> listAsleepThreads;
+    static _list<_thread> listAsleepThreads;
     static uint64 numOfThreadsAsleep;
 
     static void threadWrapper();

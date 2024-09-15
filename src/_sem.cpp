@@ -4,7 +4,7 @@
 #include "../h/_sem.hpp"
 #include "../h/riscv.hpp"
 
-List<_sem> _sem::allSemaphores;
+_list<_sem> _sem::allSemaphores;
 uint64 _sem::numOfAllSemaphores = 0;
 
 int _sem::generateWAITResponses(threadsSemStatus status)

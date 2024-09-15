@@ -7,7 +7,7 @@
 
 _thread *_thread::running = nullptr;
 uint64 _thread::timeSliceCounter = 0;
-List<_thread> _thread::listAsleepThreads;
+_list<_thread> _thread::listAsleepThreads;
 uint64 _thread::numOfThreadsAsleep = 0;
 uint64 _thread::ID = 0;
 uint64 _thread::numOfSystemThreads = 0;

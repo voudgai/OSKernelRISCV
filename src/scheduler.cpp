@@ -3,13 +3,14 @@
 //
 #include "../h/scheduler.hpp"
 
-List<_thread> Scheduler::queueThreads;
+_list<_thread> Scheduler::queueThreads;
 
-_thread *Scheduler::get() {
+_thread *Scheduler::get()
+{
     return queueThreads.removeFirst();
 }
 
-void Scheduler::put(_thread *thread) {
+void Scheduler::put(_thread *thread)
+{
     queueThreads.addLast(thread);
 }
-
