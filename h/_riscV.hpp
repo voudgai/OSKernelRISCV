@@ -138,7 +138,7 @@ private:
     inline static void changeTerminalToDef();
 
     inline static void error_msg_terminate(const char *s, volatile uint64 sepc);
-    static constexpr uint STACK_TRACE_DEPTH = 1;
+    static constexpr uint STACK_TRACE_DEPTH = 2;
 
     using Body = void (*)(void *);
 

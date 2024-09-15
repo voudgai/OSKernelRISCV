@@ -1,6 +1,6 @@
 #include "../h/syscall_c.h"
 #include "../h/syscall_cpp.hpp"
-#include "./printing.hpp"
+#include "../test/printing.hpp"
 
 int producer = 0;
 int consumer = 0;
