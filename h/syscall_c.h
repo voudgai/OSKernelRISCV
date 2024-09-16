@@ -1,5 +1,5 @@
-#ifndef _syscall_c
-#define _syscall_c
+#ifndef _s_call_c
+#define _s_call_c
 
 #include "../lib/hw.h"
 

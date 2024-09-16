@@ -9,11 +9,12 @@
 #include "_list.hpp"
 
 class _thread;
+class _time;
 class _sem
 {
 public:
-    friend class _riscV;
-    friend class _thread;
+    friend class _sysCallsHandler;
+    friend class _time;
     void *operator new(size_t n) { return _memoryAllocator::_kmalloc((_memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
     void *operator new[](size_t n) { return _memoryAllocator::_kmalloc((_memoryAllocator::SIZE_HEADER + n + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE); }
 
@@ -72,8 +73,8 @@ protected:
     void unblockAll(threadsSemStatus unblockingStatus);                // unblocks all threads waiting on this semaphore
     // void unblockTimesUp();
 
-    int generateWAITResponses(threadsSemStatus response); // depending on threads state when returning from block,
-                                                          // generates return values for wait functions
+    int generateWAITResponses(); // depending on threads state when returning from block,
+                                 // generates return values for wait functions
 
 private:
     volatile long int val;

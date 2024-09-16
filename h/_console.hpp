@@ -1,9 +1,17 @@
+#ifndef __CONSOLE__HPP_
+#define __CONSOLE__HPP_
+
 #include "../lib/hw.h"
 #include "./syscall_c.h"
 #include "../h/_sem.hpp"
+
 class _console
 {
+    friend class _sysCallsHandler;
+    friend class _SModePrinter;
+
 public:
+    static inline void console_interrupt_handler();
     static bool isThereAnythingToPrint() { return (headPrint - tailPrint) != 0; }
     static void putter_wrapper(void *);
     static void getter_wrapper(void *);
@@ -14,7 +22,6 @@ private:
     static void inline init();
     static void character_putter_thread(void *);
     static void character_getter_thread(void *);
-    friend class _riscV;
 
     static inline int putCharInBuffer(char ch);
     static inline char getCharFromBuffer();
@@ -50,6 +57,16 @@ private:
     static uint64 consoleTransferAddr; // (DO NOT CHANGE)on this location I store character for printing
     static uint64 consoleReceiveAddr;  // (DO NOT CHANGE)from this location I read character
 };
+
+inline void _console::console_interrupt_handler()
+{
+    init();
+    int intNumber = plic_claim(); // get code of terminal that caused interruption
+    if (intNumber == 0xa)
+        _console::setConsoleInterrupt(true); // if its from console
+    else
+        plic_complete(intNumber);
+}
 
 inline int _console::putCharInBuffer(char ch)
 {
@@ -136,3 +153,5 @@ inline void _console::init()
 
     initialized = true;
 }
+
+#endif

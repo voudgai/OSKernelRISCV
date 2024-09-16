@@ -7,9 +7,12 @@
 _list<_sem> _sem::allSemaphores;
 uint64 _sem::numOfAllSemaphores = 0;
 
-int _sem::generateWAITResponses(threadsSemStatus status)
+int _sem::generateWAITResponses()
 {
     /* generates response from thread information after waking up */
+
+    threadsSemStatus status = _thread::get_runningThread()->get_threadsSemStatus();
+    _thread::get_runningThread()->set_threadsSemStatus(NON_WAITING);
 
     if (status == NON_WAITING)
         return _sem::SEM_DIDNTWAIT; // it did not wait
@@ -37,10 +40,7 @@ int _sem::wait()
 
     block();
 
-    threadsSemStatus status = _thread::running->getThreadsSemStatus();
-    _thread::running->setThreadsSemStatus(NON_WAITING);
-
-    return generateWAITResponses(status);
+    return generateWAITResponses();
 }
 
 int _sem::timedWait(uint64 maxTimeSleeping)
@@ -50,38 +50,35 @@ int _sem::timedWait(uint64 maxTimeSleeping)
 
     timedBlock(maxTimeSleeping);
 
-    threadsSemStatus status = _thread::running->getThreadsSemStatus();
-    _thread::running->setThreadsSemStatus(NON_WAITING);
-
-    return generateWAITResponses(status);
+    return generateWAITResponses();
 }
 
 void _sem::block()
 {
-    _thread *old = _thread::running;
+    _thread *old = _thread::get_runningThread();
 
     queueBlocked.addLast(old);
-    old->setThreadsSemStatus(WAITING);
+    old->set_threadsSemStatus(WAITING);
+    old->set_mySem(this);
 
-    old->mySem = this;
     _thread::dispatch();
-    old->mySem = nullptr;
+
+    old->set_mySem(nullptr);
 }
 
 void _sem::timedBlock(uint64 maxTimeSleeping)
 {
-    uint64 timeForRelease = maxTimeSleeping + _riscV::getSystemTime();
+    uint64 timeForRelease = maxTimeSleeping + _time::get_sys_time();
+    _thread *old = _thread::get_runningThread();
 
-    _thread *old = _thread::running;
-
-    old->semStatus = TIMEDWAITING;
-    old->timeForWakingUp = timeForRelease;
+    old->set_threadsSemStatus(TIMEDWAITING);
+    old->set_timeForWakingUp(timeForRelease);
 
     queueBlocked.addLast(old);
-    _thread::listAsleepThreads.insert_sorted(_thread::running, _thread::smallerSleepTime, nullptr);
+    _time::insert_ordered_in_list_of_sleeping_threads(old);
 
     numOfTimedWaiting++;
-    old->mySem = this;
+    old->set_mySem(this);
 
     _thread::dispatch();
     // thread returns from being blocked here:
@@ -89,10 +86,10 @@ void _sem::timedBlock(uint64 maxTimeSleeping)
     // or from timer or from unblock,
     // its semStatus will be changed from TIMEDWAITING
 
-    old->mySem = nullptr;
+    old->set_mySem(nullptr);
     numOfTimedWaiting--;
 
-    old->timeForWakingUp = 0;
+    old->set_timeForWakingUp(0);
 }
 
 int _sem::signal()
@@ -108,26 +105,26 @@ void _sem::unblock(threadsSemStatus unblockingCause)
 {
     _thread *old = queueBlocked.removeFirst();
 
-    if (old->getThreadsSemStatus() == TIMEDWAITING)
-        _thread::listAsleepThreads.removeSpec(old);
+    if (old->get_threadsSemStatus() == TIMEDWAITING)
+        _time::remove_thread_from_sleep(old);
 
-    old->mySem = nullptr;
-    old->setThreadsSemStatus(unblockingCause);
+    old->set_mySem(nullptr);
+    old->set_threadsSemStatus(unblockingCause);
     Scheduler::put(old);
 }
 
 void _sem::unblockedByTime(_thread *old) // called by function which wakes up threads in _thread class
 {
-    if (old->getThreadsSemStatus() != TIMEDWAITING)
-        return;
+    if (old->get_threadsSemStatus() != TIMEDWAITING)
+        return; // how can it be unblocked by time if its not timed waiting
 
     val++; // this is difference from normal unblocking; we need to increase val
 
-    _thread::listAsleepThreads.removeSpec(old);
-    _sem::queueBlocked.removeSpec(old);
+    _time::remove_thread_from_sleep(old);
+    queueBlocked.removeSpec(old);
 
-    old->mySem = nullptr; // this would be done anyways after returning from dispatch
-    old->setThreadsSemStatus(TIMEOUT);
+    old->set_mySem(nullptr); // this would be done anyways after returning from dispatch
+    old->set_threadsSemStatus(TIMEOUT);
     Scheduler::put(old);
 }
 

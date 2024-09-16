@@ -6,20 +6,8 @@
 #include "../h/syscall_c.h"
 
 _thread *_thread::running = nullptr;
-uint64 _thread::timeSliceCounter = 0;
-_list<_thread> _thread::listAsleepThreads;
-uint64 _thread::numOfThreadsAsleep = 0;
 uint64 _thread::ID = 0;
 uint64 _thread::numOfSystemThreads = 0;
-
-void _thread::priority_print(const char *s)
-{
-    _console::empty_console_print_all();
-    _riscV::priority_print("T_");
-    _riscV::priority_print_int(myID);
-    _riscV::priority_print(" : ");
-    _riscV::priority_print(s);
-}
 
 _thread *_thread::createThread(Body body, void *arg, uint64 *stack_space)
 {
@@ -37,18 +25,13 @@ void _thread::exit()
 {
     if (running->parentThread)
         running->parentThread->numOfChildren--;
-    running->setFinished(true);
+    running->setFinished();
     dispatch(); // in dispatch(), if thread is finished, it frees its memory
 }
 
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-bool _thread::readyToRun() { return threadState == READY || threadState == RUNNING; }
-//{ return !this->finished && !this->sleeping && !(this->semStatus == _sem::WAITING || this->semStatus == _sem::TIMEDWAITING); }
-
 void _thread::dispatch() // in dispatch(), if thread is finished, it frees its memory
 {
-    resetTimeSliceCounter();
+    _time::reset_runningThread_CPU_time();
     _thread *old = running;
     if (old->readyToRun())
     {
@@ -97,50 +80,6 @@ void _thread::deleteThread_inDispatch(_thread *thr, void *systemTimePtr)
     }
 }
 
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void _thread::putThreadToSleep(uint64 timeForSleeping)
-{
-    running->threadState = SUSPENDED;
-    running->timeForWakingUp = _riscV::getSystemTime() + timeForSleeping;
-    numOfThreadsAsleep++;
-
-    listAsleepThreads.insert_sorted(running, smallerSleepTime, nullptr);
-    dispatch();
-
-    running->threadState = READY;
-    running->timeForWakingUp = 0;
-    numOfThreadsAsleep--;
-}
-
-void _thread::wakeAsleepThreads()
-{
-    listAsleepThreads.foreachWhile(wakeThreadUp, nullptr, shouldWakeUpThread, nullptr);
-}
-
-bool _thread::shouldWakeUpThread(_thread *thr, void *systemTimePtr)
-{
-    return (thr->timeForWakingUp <= _riscV::getSystemTime());
-}
-
-void _thread::wakeThreadUp(_thread *thr, void *ptr)
-{
-    if (!thr || !isThreadValid(thr))
-        return;
-
-    if (thr->getThreadsSemStatus() == _sem::TIMEDWAITING)
-    {
-        if (thr->mySem != nullptr)
-            (thr->mySem)->unblockedByTime(thr);
-    }
-    else if (listAsleepThreads.removeSpec(thr) == true)
-    {
-        Scheduler::put(thr);
-    }
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 int _thread::subtleKill(_thread *threadToBeKilled)
 {
     if (!threadToBeKilled || !isThreadValid(threadToBeKilled))
@@ -152,6 +91,6 @@ int _thread::subtleKill(_thread *threadToBeKilled)
     if (_thread::running == threadToBeKilled)
         return -3;
 
-    threadToBeKilled->setFinished(true); // scheduler will destroy it
+    threadToBeKilled->setFinished(); // scheduler will destroy it
     return 0;
 }

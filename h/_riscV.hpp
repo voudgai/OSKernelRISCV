@@ -6,14 +6,12 @@
 #include "_thread.hpp"
 #include "_sem.hpp"
 #include "_console.hpp"
+#include "_time.hpp"
+#include "_SModePrinter.hpp"
 
 class _riscV
 {
-    friend class _thread;
-
 public:
-    static inline uint64 getSystemTime() { return SYS_TIME; }
-
     // pop sstatus.spp and sstatus.spie bits (has to be a non inline function)
     static void popSppSpieChangeMod();
 
@@ -90,30 +88,6 @@ public:
         ILLEGAL_RD_ADDR = 0x0000000000000005UL,
     };
 
-    enum trapEcallCause
-    {
-        MALLOC = 0x01,
-        MFREE = 0x02,
-
-        THREAD_CREATE = 0x11,
-        THREAD_EXIT = 0x12,
-        THREAD_DISPATCH = 0x13,
-
-        SEM_OPEN = 0x21,
-        SEM_CLOSE = 0x22,
-        SEM_WAIT = 0x23,
-        SEM_SIGNAL = 0x24,
-        SEM_TIMEDWAIT = 0x25,
-        SEM_TRYWAIT = 0x26,
-
-        TIME_SLEEP = 0x31,
-
-        GETC = 0x41,
-        PUTC = 0x42,
-
-        GET_THREAD_ID = 0x51
-    };
-
     // supervisor trap
     static void supervisorTrap();
 
@@ -121,41 +95,21 @@ public:
     static void pushRegisters();
     static void popRegisters();
 
+    // kill emulator, kill system
     static void killQEMU();
 
 private:
     // supervisor trap handler
     static void handleSupervisorTrap(unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-    static uint64 SYS_TIME;
-    static inline void incSysTime(uint64 i = 1) { SYS_TIME += i; }
 
-    // error printer in Supervisor mode
-    inline static void priority_print(const char *s);
-    inline static void priority_print_int(int xx, int base = 10, int sgn = 0);
+    // print stack trace
     inline static void print_stack_trace(uint depth, uint64 sepc);
-
-    inline static void changeTerminalToRed();
-    inline static void changeTerminalToDef();
-
-    inline static void error_msg_terminate(const char *s, volatile uint64 sepc);
     static constexpr uint STACK_TRACE_DEPTH = 2;
 
-    using Body = void (*)(void *);
+    // print error message and terminate kernel
+    inline static void error_msg_terminate(const char *s, volatile uint64 sepc);
 
-    static inline uint64 mem_alloc_wrapper(uint64 numOfBlocks);
-    static inline uint64 mem_free_wrapper(void *ptr);
-    static inline uint64 thread_create_wrapper(_thread **handle, Body body, void *arg, uint64 *stack_space);
-    static inline uint64 thread_exit_wrapper();
-    static inline uint64 thread_dispatch_wrapper();
-    static inline uint64 sem_open_wrapper(_sem **handle, uint64 val);
-    static inline uint64 sem_close_wrapper(_sem *sem);
-    static inline uint64 sem_wait_wrapper(_sem *sem);
-    static inline uint64 sem_signal_wrapper(_sem *sem);
-    static inline uint64 sem_timedwait_wrapper(_sem *sem, uint64 maxTime);
-    static inline uint64 sem_trywait_wrapper(_sem *sem);
-    static inline uint64 time_sleep_wrapper(uint64 timeForSleep);
-    static inline uint64 putc_wrapper(char c);
-    static inline uint64 getc_wrapper();
+    using Body = void (*)(void *);
 };
 
 inline uint64 _riscV::r_scause()
@@ -250,94 +204,6 @@ inline void _riscV::w_sstatus(uint64 sstatus)
     __asm__ volatile("csrw sstatus, %[sstatus]" : : [sstatus] "r"(sstatus));
 }
 
-inline void _riscV::priority_print(const char *s)
-{
-    changeTerminalToRed();
-    int i = 0;
-    while (s[i] != '\0')
-    {
-        if (_console::transferReady())
-        {
-            _console::putCharInTerminal(s[i]);
-            i++;
-        }
-    }
-
-    plic_complete(0xa);
-    changeTerminalToDef();
-}
-
-inline void _riscV::priority_print_int(int xx, int base, int sgn)
-{
-    changeTerminalToRed();
-
-    char digits[] = "0123456789abcdef";
-    char buf[16];
-    int i;
-    bool neg;
-    uint x;
-
-    neg = false;
-    if (sgn && xx < 0)
-    {
-        neg = true;
-        x = -xx;
-    }
-    else
-    {
-        x = xx;
-    }
-
-    i = 0;
-    do
-    {
-        buf[i++] = digits[x % base];
-    } while ((x /= base) != 0);
-
-    if (neg)
-        buf[i++] = '-';
-
-    while (--i >= 0)
-        _console::putCharInTerminal(buf[i]);
-
-    plic_complete(0xa);
-
-    changeTerminalToDef();
-}
-
-inline void _riscV::changeTerminalToDef()
-{
-
-    static const char *changeColor = "\033[0m";
-
-    int k = 0;
-    while (changeColor[k] != '\0')
-    {
-        if (_console::transferReady())
-        {
-            _console::putCharInTerminal(changeColor[k]);
-            k++;
-        }
-    }
-    plic_complete(0xa);
-}
-
-inline void _riscV::changeTerminalToRed()
-{
-    static const char *changeColor = "\033[31m";
-
-    int k = 0;
-    while (changeColor[k] != '\0')
-    {
-        if (_console::transferReady())
-        {
-            _console::putCharInTerminal(changeColor[k]);
-            k++;
-        }
-    }
-    plic_complete(0xa);
-}
-
 inline void _riscV::print_stack_trace(uint depth, uint64 sepc)
 {
     static int recursionCounter = 0;
@@ -350,137 +216,41 @@ inline void _riscV::print_stack_trace(uint depth, uint64 sepc)
     // Dobijanje trenutnog frame pointer-a
     __asm__ volatile("mv %0, fp" : "=r"(framePointer));
 
-    priority_print("-\n-Stack trace :\n ");
+    _SModePrinter::priority_print("-\n-Stack trace :\n ");
 
-    priority_print(" Current SEPC: 0x");
-    priority_print_int(sepc, 16, 0);
-    priority_print("\n");
+    _SModePrinter::priority_print(" Current SEPC: 0x");
+    _SModePrinter::priority_print_int(sepc, 16, 0);
+    _SModePrinter::priority_print("\n");
 
     for (uint i = 0; i < depth && returnAddress; i++)
     {
         // Dobijanje povratne adrese
         __asm__ volatile("ld %0, 8(%1)" : "=r"(returnAddress) : "r"(framePointer));
 
-        priority_print("   Call address: 0x");
-        priority_print_int(returnAddress, 16, 0);
-        priority_print(" (-4)\n");
+        _SModePrinter::priority_print("   Call address: 0x");
+        _SModePrinter::priority_print_int(returnAddress, 16, 0);
+        _SModePrinter::priority_print(" (-4)\n");
 
         // Dobijanje sledećeg frame pointer-a
         __asm__ volatile("ld %0, 0(%1)" : "=r"(framePointer) : "r"(framePointer));
     }
-    priority_print("---------------------------------------\n");
+    _SModePrinter::priority_print("---------------------------------------\n");
 
     recursionCounter--;
 }
 
 inline void _riscV::error_msg_terminate(const char *s, uint64 sepc)
 {
-    priority_print(s);
+    _SModePrinter::priority_print(s);
     print_stack_trace(STACK_TRACE_DEPTH, sepc);
     killQEMU();
-}
-
-inline uint64 _riscV::mem_alloc_wrapper(uint64 numOfBlocks)
-{
-    return (uint64)_memoryAllocator::_kmalloc(numOfBlocks);
-}
-
-inline uint64 _riscV::mem_free_wrapper(void *ptr)
-{
-    return _memoryAllocator::_kmfree(ptr);
-}
-
-inline uint64 _riscV::thread_create_wrapper(_thread **handle, Body body, void *arg, uint64 *stack_space)
-{
-    *handle = _thread::createThread(body, arg, stack_space);
-    return (*handle != nullptr) ? 0 : -1;
-}
-//__asm__ volatile("mv %0, a1" : "=r" (handle));
-
-inline uint64 _riscV::thread_exit_wrapper()
-{
-    _thread::exit();
-    return -1;
-}
-
-inline uint64 _riscV::thread_dispatch_wrapper()
-{
-    _thread::dispatch();
-    return 0;
-}
-
-inline uint64 _riscV::sem_open_wrapper(_sem **handle, uint64 val)
-{
-    *handle = new _sem(val);
-    return (*handle == nullptr) ? -1 : 0;
-} //__asm__  volatile("mv a0, %[a]"::[a]"r"(result));
-
-inline uint64 _riscV::sem_close_wrapper(_sem *sem)
-{
-    if (!sem)
-        return -1;
-
-    delete sem;
-    return 0;
-}
-
-inline uint64 _riscV::sem_wait_wrapper(_sem *sem)
-{
-    if (!sem)
-        return -1;
-
-    return sem->wait();
-}
-
-inline uint64 _riscV::sem_signal_wrapper(_sem *sem)
-{
-    if (!sem)
-        return -1;
-
-    return sem->signal(); // 1 if signaled any thread, 0 if didnt
-}
-
-inline uint64 _riscV::sem_timedwait_wrapper(_sem *sem, uint64 maxTime)
-{
-    if (!sem)
-        return -1;
-
-    return sem->timedWait(maxTime);
-}
-
-inline uint64 _riscV::sem_trywait_wrapper(_sem *sem)
-{
-    if (!sem)
-        return -1;
-
-    return sem->tryWait();
-}
-
-inline uint64 _riscV::time_sleep_wrapper(uint64 timeForSleeping)
-{
-
-    if (timeForSleeping > ((uint64)1 << 63))
-        timeForSleeping = timeForSleeping >> 1;
-
-    _thread::putThreadToSleep(timeForSleeping);
-    return 0;
-}
-
-inline uint64 _riscV::getc_wrapper()
-{
-    return (uint64)_console::getCharFromBuffer();
-}
-
-inline uint64 _riscV::putc_wrapper(char c)
-{
-    return _console::putCharInBuffer(c);
 }
 
 inline void _riscV::killQEMU()
 {
     _console::empty_console_print_all();
 
-    priority_print("\nKernel finished! :)\n\n");
+    _SModePrinter::priority_print("\nKernel finished! :)\n\n");
 
     __asm__(
         "li t0, 0x5555\n"   // Učitajte 32-bitnu vrednost 0x5555 u registar t0
