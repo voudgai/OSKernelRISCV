@@ -87,13 +87,13 @@ inline uint64 _sysCallsHandler::thread_create_wrapper(_thread **handle, Body bod
 
 inline uint64 _sysCallsHandler::thread_exit_wrapper()
 {
-    _thread::exit();
+    _context::exit();
     return -1;
 }
 
 inline uint64 _sysCallsHandler::thread_dispatch_wrapper()
 {
-    _thread::dispatch();
+    _context::dispatch();
     return 0;
 }
 

@@ -5,9 +5,10 @@
 #include "_list.hpp"
 
 class _thread;
+class _context;
 class Scheduler
 {
-    friend class _thread;
+    friend class _context;
 
 public:
     static void put(_thread *);

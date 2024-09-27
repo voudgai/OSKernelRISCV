@@ -61,7 +61,7 @@ void _sem::block()
     old->set_threadsSemStatus(WAITING);
     old->set_mySem(this);
 
-    _thread::dispatch();
+    _context::dispatch();
 
     old->set_mySem(nullptr);
 }
@@ -80,7 +80,7 @@ void _sem::timedBlock(uint64 maxTimeSleeping)
     numOfTimedWaiting++;
     old->set_mySem(this);
 
-    _thread::dispatch();
+    _context::dispatch();
     // thread returns from being blocked here:
     // if it was returned from sem destructor
     // or from timer or from unblock,

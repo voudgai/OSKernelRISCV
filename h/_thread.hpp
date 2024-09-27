@@ -9,16 +9,19 @@
 #include "_scheduler.hpp"
 #include "_memoryAllocator.hpp"
 #include "_sem.hpp"
+#include "_context.hpp"
 
 class _sem;
 class _riscV;
 class _time;
+class _context;
 // Thread Control Block
 class _thread
 {
 
     friend class _sysCallsHandler;
     friend class _time;
+    friend class _context;
 
     void priority_print(const char *s);
     using Body = void (*)(void *);
@@ -74,9 +77,6 @@ public:
     // create a thread
     static _thread *createThread(Body body, void *arg, uint64 *stack_space);
 
-    // kill a thread
-    static int subtleKill(_thread *threadToBeKilled);
-
     // set or get semaphore which is running thread on
     inline static _sem *get_runningThread_sem() { return running ? running->mySem : nullptr; }
     inline static void set_runningThread_sem(_sem *sem);
@@ -116,16 +116,10 @@ private:
             numOfSystemThreads++; // if thread is main or its made by main (main has body == nullptr) then its system thread
     }
 
-    struct Context
-    {
-        uint64 ra; // return address for this thread for context switch
-        uint64 sp; // stack_pointer for this thread for context switch
-    };
-
     Body body = nullptr;     // body of thread, function that thread will process
     void *arg = nullptr;     // argument for threads body
     uint64 *stack = nullptr; // pointer to stack allocated for this thread
-    Context context;         // context of this thread, valueable for context switching
+    _context context;        // context of this thread, valueable for context switching
     uint64 timeSlice = 0;    // how much time this thread gets on CPU before preemption
 
     threadStateTypes threadState = READY; // threadState, says a lot about thread
@@ -144,9 +138,6 @@ private:
     void disableThread();
 
     static void threadWrapper();
-    static void contextSwitch(Context *oldContext, Context *runningContext);
-    static void dispatch();
-    static void exit();
 
     static uint64 constexpr STACK_SIZE = DEFAULT_STACK_SIZE / sizeof(uint64);
     static uint64 constexpr TIME_SLICE = DEFAULT_TIME_SLICE;
@@ -157,10 +148,6 @@ private:
     static constexpr uint64 THREAD_MAGIC_NUMBER = 0xf832d45809acdeef;
     static constexpr uint64 THREAD_DUMP_MAGIC_NUMBER = 0xacdcacdcacdcacdc;
     static constexpr int THREAD_IS_INVALID_ERR = -10;
-
-    static bool threadDEAD(_thread *thr, void *ptr);              // used for foreachWhile in queueThreads in dispatch(), Scheduling
-    static void deleteThread_inDispatch(_thread *thr, void *ptr); // used for foreachWhile in queueThreads in dispatch(), Scheduling
-    // while threadDEAD do deleteThread_inDispatch
 };
 
 inline void _thread::setFinished()

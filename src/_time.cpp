@@ -15,7 +15,7 @@ void _time::timer_interrupt_handler()
 
     // _contextSwitch::preemption();
     if (get_runningThread_CPU_time() >= _thread::running->getTimeSlice())
-        _thread::dispatch(); // preemption if needed
+        _context::dispatch(); // preemption if needed
 }
 
 void _time::put_runningThread_to_sleep(uint64 timeSleeping)
@@ -33,7 +33,7 @@ void _time::put_thread_to_sleep(_thread *thr, uint64 timeSleeping)
     numOfThreadsAsleep++;                                    // inc number of asleep threads
 
     listAsleepThreads.insert_sorted(thr, smallerSleepTime, nullptr); // insert sorted by ascending sleep time
-    _thread::dispatch();                                             // change context
+    _context::dispatch();                                            // change context
     // _contextSwitch::dispatch()
 
     thr->set_threadState(_thread::READY); // we returned to this threads context, set its state to READY

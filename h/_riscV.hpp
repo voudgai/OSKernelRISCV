@@ -92,8 +92,8 @@ public:
     static void supervisorTrap();
 
     // push and pop x3..x31 registers onto stack
-    static void pushRegisters();
-    static void popRegisters();
+    inline static void pushRegisters(bool saveRAandSP = false);
+    inline static void popRegisters(bool RAandSPwereSaved = false);
 
     // kill emulator, kill system
     static void killQEMU();
@@ -111,6 +111,42 @@ private:
 
     using Body = void (*)(void *);
 };
+
+void _riscV::pushRegisters(bool saveRAandSP)
+{
+    // x0 - wired to zero, x1 - ra, x2 - sp, so there is no need to save them (usually)
+    __asm__(
+        "addi sp, sp, -256\n"
+
+        ".irp index, 3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31\n"
+        "sd x\\index, \\index * 8(sp)\n"
+        ".endr\n");
+
+    if (saveRAandSP)
+    {
+        __asm__(".irp index, 1,2\n"
+                "sd x\\index, \\index * 8(sp)\n"
+                ".endr\n");
+    }
+}
+
+void _riscV::popRegisters(bool RAandSPwereSaved)
+{
+    // x0 - wired to zero, x1 - ra, x2 - sp, so there is no need to save them (usually)
+    if (RAandSPwereSaved)
+    {
+        __asm__(
+            ".irp index, 1,2\n"
+            "ld x\\index, \\index * 8(sp)\n"
+            ".endr\n");
+    }
+    __asm__(
+        ".irp index, 3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31\n"
+        "ld x\\index, \\index * 8(sp)\n"
+        ".endr\n"
+
+        "addi sp, sp, 256\n");
+}
 
 inline uint64 _riscV::r_scause()
 {

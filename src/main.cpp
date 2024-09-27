@@ -32,8 +32,8 @@ int main()
         thread_dispatch();
     }
 
-    _thread::subtleKill(putc_thread);
-    _thread::subtleKill(getc_thread);
+    _context::subtleKill(putc_thread);
+    _context::subtleKill(getc_thread);
 
     thread_dispatch();
 
